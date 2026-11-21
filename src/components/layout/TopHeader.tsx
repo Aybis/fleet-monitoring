@@ -43,6 +43,8 @@ export function TopHeader() {
     markNotificationRead,
     markAllNotificationsRead,
     resetDemoData,
+    liveTickCount,
+    lastHeartbeat,
   } = useHaulTrack();
 
   const [query, setQuery] = useState("");
@@ -388,6 +390,43 @@ export function TopHeader() {
 
       {/* Right Utility Controls */}
       <div className="order-2 flex items-center gap-2.5 sm:order-3">
+        {/* Global Real-Time Telemetry Stream Indicator Pill */}
+        <button
+          type="button"
+          onClick={() =>
+            updateSettings({ liveTelemetryUpdates: !settings.liveTelemetryUpdates })
+          }
+          title={
+            settings.liveTelemetryUpdates
+              ? `Live OBD-II & GPS stream active (Packet #${liveTickCount}) — Click to pause`
+              : "Real-time stream paused — Click to resume"
+          }
+          className={cn(
+            "hidden h-10 cursor-pointer items-center gap-2 rounded-full border px-3.5 text-xs font-bold shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-all md:inline-flex",
+            settings.liveTelemetryUpdates
+              ? "border-red-500/35 bg-card text-foreground hover:border-red-500/60"
+              : "border-border bg-muted/70 text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <span className="relative flex h-2 w-2">
+            {settings.liveTelemetryUpdates && (
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+            )}
+            <span
+              className={cn(
+                "relative inline-flex h-2 w-2 rounded-full",
+                settings.liveTelemetryUpdates ? "bg-red-600" : "bg-slate-400"
+              )}
+            />
+          </span>
+          <span className="uppercase tracking-wider text-[10px] font-black text-red-600 dark:text-red-400">
+            {settings.liveTelemetryUpdates ? "LIVE" : "PAUSED"}
+          </span>
+          <span className="font-mono text-[11px] font-semibold text-muted-foreground tabular-nums">
+            {lastHeartbeat}
+          </span>
+        </button>
+
         {/* Notifications Bell Popover */}
         <Popover>
           <PopoverTrigger asChild>

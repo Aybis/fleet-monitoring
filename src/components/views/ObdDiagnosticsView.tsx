@@ -1,5 +1,15 @@
 import { useMemo, useState } from "react";
 import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
+import {
   Activity,
   AlertTriangle,
   CheckCircle2,
@@ -38,7 +48,12 @@ export function ObdDiagnosticsView() {
     acknowledgeDtc,
     runDpfRegen,
     setActivePage,
+    settings,
+    telemetryHistory,
+    lastHeartbeat,
   } = useHaulTrack();
+
+  const liveSeries = telemetryHistory[activeTruck.id] ?? [];
 
   const [dtcSearch, setDtcSearch] = useState("");
   const [subsystemFilter, setSubsystemFilter] = useState("All");
@@ -374,6 +389,98 @@ export function ObdDiagnosticsView() {
               </div>
             );
           })}
+        </div>
+        {/* Live Real-Time OBD-II Oscilloscope Chart */}
+        <div className="mt-5 rounded-2xl border border-border/75 bg-background/50 p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  {settings.liveTelemetryUpdates && (
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+                  )}
+                  <span
+                    className={cn(
+                      "relative inline-flex h-2 w-2 rounded-full",
+                      settings.liveTelemetryUpdates ? "bg-red-600" : "bg-slate-400"
+                    )}
+                  />
+                </span>
+                <h3 className="text-xs font-extrabold text-foreground">
+                  Real-Time CAN / OBD-II Live Sensor Stream ({activeTruck.plate})
+                </h3>
+              </div>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                Live rolling telemetry every 2.5s — Engine RPM (left axis) vs Turbo Boost kPa &amp;
+                Fuel Rail MPa (right axis)
+              </p>
+            </div>
+            <span className="rounded-lg bg-muted px-2.5 py-1 font-mono text-[10.5px] font-semibold text-muted-foreground tabular-nums">
+              Last ECU Frame: {lastHeartbeat}
+            </span>
+          </div>
+
+          <div className="h-[195px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={liveSeries} margin={{ top: 6, right: 12, left: -12, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.18)" />
+                <XAxis dataKey="time" tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                <YAxis
+                  yAxisId="rpm"
+                  domain={["auto", "auto"]}
+                  tick={{ fontSize: 10 }}
+                  stroke="#94a3b8"
+                />
+                <YAxis
+                  yAxisId="pressure"
+                  orientation="right"
+                  domain={[0, 180]}
+                  tick={{ fontSize: 10 }}
+                  stroke="#94a3b8"
+                />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: "12px",
+                    border: "1px solid var(--border)",
+                    backgroundColor: "var(--card)",
+                    color: "var(--foreground)",
+                    fontSize: "11px",
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: "11px" }} />
+                <Line
+                  yAxisId="rpm"
+                  type="monotone"
+                  dataKey="rpm"
+                  name="Engine RPM"
+                  stroke="#d91324"
+                  strokeWidth={2.2}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+                <Line
+                  yAxisId="pressure"
+                  type="monotone"
+                  dataKey="boostKpa"
+                  name="Turbo Boost (kPa)"
+                  stroke="#0284c7"
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+                <Line
+                  yAxisId="pressure"
+                  type="monotone"
+                  dataKey="fuelRailMpa"
+                  name="Fuel Rail (MPa)"
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </Card>
 

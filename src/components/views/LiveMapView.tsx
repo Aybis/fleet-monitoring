@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   MapPin,
   Navigation,
@@ -50,6 +50,8 @@ export function LiveMapView() {
     setActivePage,
     simulateGpsTick,
     scanVehicleObd,
+    updateSettings,
+    lastHeartbeat,
   } = useHaulTrack();
 
   const [focusPreset, setFocusPreset] = useState<
@@ -60,17 +62,10 @@ export function LiveMapView() {
   const [showRoutes, setShowRoutes] = useState(true);
   const [showObdBadges, setShowObdBadges] = useState(true);
   const [showGeofences, setShowGeofences] = useState(true);
-  const [autoStream, setAutoStream] = useState(true);
   const [seriesFilter, setSeriesFilter] = useState<string>("ALL");
   const [obdFilter, setObdFilter] = useState<"ALL" | "ALERTS" | "HEALTHY">("ALL");
 
-  useEffect(() => {
-    if (!autoStream) return;
-    const id = window.setInterval(() => {
-      simulateGpsTick();
-    }, 5000);
-    return () => window.clearInterval(id);
-  }, [autoStream, simulateGpsTick]);
+  const autoStream = settings.liveTelemetryUpdates;
 
   const visibleTrucks = trucks.filter((t) => {
     if (seriesFilter !== "ALL" && t.series !== seriesFilter) return false;
@@ -142,13 +137,13 @@ export function LiveMapView() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setAutoStream((v) => !v)}
+            onClick={() => updateSettings({ liveTelemetryUpdates: !autoStream })}
             className="h-10 rounded-xl px-3.5 text-xs font-semibold"
           >
             {autoStream ? (
               <>
                 <Pause className="h-3.5 w-3.5 text-red-600" />
-                Live GPS: Streaming
+                Live GPS: {lastHeartbeat}
               </>
             ) : (
               <>

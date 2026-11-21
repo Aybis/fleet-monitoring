@@ -21,6 +21,7 @@ import type {
   QueuedShipment,
   RouteInfo,
   SlotCondition,
+  TelemetrySample,
   ToastItem,
   Truck,
   TruckStatus,
@@ -124,6 +125,9 @@ interface HaulTrackContextValue {
   acknowledgeDtc: (truckId: string, code: string) => void;
   runDpfRegen: (truckId: string) => void;
   simulateGpsTick: () => void;
+  liveTickCount: number;
+  lastHeartbeat: string;
+  telemetryHistory: Record<string, TelemetrySample[]>;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
   updateSettings: (patch: Partial<AppSettings>) => void;
@@ -136,6 +140,43 @@ interface HaulTrackContextValue {
 
 const HaulTrackContext = createContext<HaulTrackContextValue | null>(null);
 
+function formatLiveClock(): string {
+  return new Date().toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+}
+
+function seedTelemetryHistory(trucks: Truck[]): Record<string, TelemetrySample[]> {
+  const now = Date.now();
+  const map: Record<string, TelemetrySample[]> = {};
+  for (const t of trucks) {
+    const samples: TelemetrySample[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const ts = new Date(now - i * 2500).toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      });
+      const wave = Math.sin(i * 0.7);
+      const isMoving = t.status === "In Transit";
+      samples.push({
+        time: ts,
+        rpm: Math.round(t.obd.rpm + wave * (isMoving ? 55 : 14)),
+        speedKmh: isMoving ? Math.max(38, Math.round(t.route.speedMph + wave * 3)) : 0,
+        boostKpa: Math.max(12, Math.round(t.obd.boostKpa + wave * (isMoving ? 8 : 2))),
+        fuelRailMpa: Math.max(36, Math.round(t.obd.fuelRailMpa + wave * (isMoving ? 5 : 2))),
+        coolantTempC: t.obd.coolantTempC,
+      });
+    }
+    map[t.id] = samples;
+  }
+  return map;
+}
+
 export function HaulTrackProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<PersistedState>(loadInitialState);
   const [activePage, setActivePage] = useState<NavPage>("dashboard");
@@ -143,6 +184,11 @@ export function HaulTrackProvider({ children }: { children: React.ReactNode }) {
   const [liveTrackingOpen, setLiveTrackingOpen] = useState(false);
   const [dispatchModalOpen, setDispatchModalOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [liveTickCount, setLiveTickCount] = useState(1);
+  const [lastHeartbeat, setLastHeartbeat] = useState<string>(() => formatLiveClock());
+  const [telemetryHistory, setTelemetryHistory] = useState<Record<string, TelemetrySample[]>>(() =>
+    seedTelemetryHistory(state.trucks)
+  );
 
   useEffect(() => {
     try {
@@ -853,24 +899,101 @@ export function HaulTrackProvider({ children }: { children: React.ReactNode }) {
   );
 
   const simulateGpsTick = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      trucks: prev.trucks.map((t) => {
-        if (t.status !== "In Transit") return t;
+    const clockStr = formatLiveClock();
+    setLastHeartbeat(clockStr);
+    setLiveTickCount((c) => c + 1);
+
+    setState((prev) => {
+      const nextTrucks = prev.trucks.map((t) => {
+        const isMoving = t.status === "In Transit";
+        const speedDelta = isMoving ? Math.round(Math.random() * 6) - 3 : 0;
+        const nextSpeed = isMoving
+          ? Math.max(46, Math.min(92, t.route.speedMph + speedDelta))
+          : 0;
+
+        // Smooth realistic OBD-II sensor PID fluctuations
+        const rpmJitter = isMoving
+          ? Math.round((Math.random() - 0.5) * 110 + speedDelta * 18)
+          : Math.round((Math.random() - 0.5) * 28);
+        const nextRpm = isMoving
+          ? Math.max(1250, Math.min(2480, t.obd.rpm + rpmJitter))
+          : Math.max(680, Math.min(760, t.obd.rpm + rpmJitter));
+
+        const boostJitter = isMoving
+          ? Math.round((Math.random() - 0.5) * 14 + speedDelta * 2)
+          : Math.round((Math.random() - 0.5) * 3);
+        const nextBoost = isMoving
+          ? Math.max(68, Math.min(168, t.obd.boostKpa + boostJitter))
+          : Math.max(14, Math.min(26, t.obd.boostKpa + boostJitter));
+
+        const railJitter = isMoving
+          ? Math.round((Math.random() - 0.5) * 8)
+          : Math.round((Math.random() - 0.5) * 3);
+        const nextRail = isMoving
+          ? Math.max(62, Math.min(164, t.obd.fuelRailMpa + railJitter))
+          : Math.max(42, Math.min(60, t.obd.fuelRailMpa + railJitter));
+
+        const oilJitter = Math.round((Math.random() - 0.5) * 12);
+        const nextOil = isMoving
+          ? Math.max(330, Math.min(460, t.obd.oilPressureKpa + oilJitter))
+          : Math.max(260, Math.min(320, t.obd.oilPressureKpa + oilJitter));
+
+        const is24v = t.obd.batteryVolts > 18;
+        const voltDelta = (Math.random() - 0.5) * 0.2;
+        const nextVolts = Number(
+          Math.max(
+            is24v ? 22.8 : 13.6,
+            Math.min(is24v ? 28.3 : 14.3, t.obd.batteryVolts + voltDelta)
+          ).toFixed(1)
+        );
+
+        const tempJitter = Math.random() > 0.72 ? (Math.random() > 0.5 ? 1 : -1) : 0;
+        const nextCoolant = Math.max(76, Math.min(97, t.obd.coolantTempC + tempJitter));
+        const nextBayTemp = Number(
+          Math.max(2.0, Math.min(21.0, t.tempCelsius + (Math.random() - 0.5) * 0.2)).toFixed(1)
+        );
+        const nextLoadPct = isMoving
+          ? Math.max(42, Math.min(88, t.obd.engineLoadPct + Math.round((Math.random() - 0.5) * 6)))
+          : Math.max(16, Math.min(28, t.obd.engineLoadPct + Math.round((Math.random() - 0.5) * 3)));
+
+        if (!isMoving) {
+          return {
+            ...t,
+            tempCelsius: nextBayTemp,
+            gps: {
+              ...t.gps,
+              lastPing: "Just now",
+            },
+            obd: {
+              ...t.obd,
+              lastScan: clockStr,
+              rpm: nextRpm,
+              boostKpa: nextBoost,
+              fuelRailMpa: nextRail,
+              oilPressureKpa: nextOil,
+              batteryVolts: nextVolts,
+              coolantTempC: nextCoolant,
+              engineLoadPct: nextLoadPct,
+            },
+          };
+        }
+
+        // Smooth realistic GPS movement along heading inside Indonesia corridor
         const rad = ((t.gps.headingDeg - 90) * Math.PI) / 180;
-        const dLat = -Math.sin(rad) * 0.04;
-        const dLng = Math.cos(rad) * 0.06;
-        const nextLat = Number(Math.max(-9.2, Math.min(5.2, t.gps.lat + dLat)).toFixed(4));
-        const nextLng = Number(Math.max(95.8, Math.min(140.2, t.gps.lng + dLng)).toFixed(4));
+        const dLat = -Math.sin(rad) * 0.012;
+        const dLng = Math.cos(rad) * 0.016;
+        const nextLat = Number(Math.max(-9.0, Math.min(4.8, t.gps.lat + dLat)).toFixed(4));
+        const nextLng = Number(Math.max(96.0, Math.min(140.0, t.gps.lng + dLng)).toFixed(4));
         const proj = projectIndonesia(nextLat, nextLng);
-        const nextPct = Math.min(99, t.route.progressPercent + 1);
-        const speedDelta = Math.round(Math.random() * 6) - 3;
+
         return {
           ...t,
+          odometerKm: t.odometerKm + (Math.random() > 0.65 ? 1 : 0),
+          tempCelsius: nextBayTemp,
           route: {
             ...t.route,
-            progressPercent: nextPct,
-            speedMph: Math.max(46, Math.min(92, t.route.speedMph + speedDelta)),
+            progressPercent: t.route.progressPercent >= 98 ? 15 : t.route.progressPercent + (Math.random() > 0.78 ? 1 : 0),
+            speedMph: nextSpeed,
           },
           gps: {
             ...t.gps,
@@ -880,10 +1003,79 @@ export function HaulTrackProvider({ children }: { children: React.ReactNode }) {
             mapY: proj.y,
             lastPing: "Just now",
           },
+          obd: {
+            ...t.obd,
+            lastScan: clockStr,
+            rpm: nextRpm,
+            boostKpa: nextBoost,
+            fuelRailMpa: nextRail,
+            oilPressureKpa: nextOil,
+            batteryVolts: nextVolts,
+            coolantTempC: nextCoolant,
+            engineLoadPct: nextLoadPct,
+          },
         };
-      }),
-    }));
+      });
+
+      // Push rolling sample into live telemetry history
+      setTelemetryHistory((histPrev) => {
+        const updated: Record<string, TelemetrySample[]> = { ...histPrev };
+        for (const nt of nextTrucks) {
+          const prevSeries = updated[nt.id] ?? [];
+          updated[nt.id] = [
+            ...prevSeries.slice(-17),
+            {
+              time: clockStr,
+              rpm: nt.obd.rpm,
+              speedKmh: nt.route.speedMph,
+              boostKpa: nt.obd.boostKpa,
+              fuelRailMpa: nt.obd.fuelRailMpa,
+              coolantTempC: nt.obd.coolantTempC,
+            },
+          ];
+        }
+        return updated;
+      });
+
+      return {
+        ...prev,
+        trucks: nextTrucks,
+      };
+    });
   }, []);
+
+  // Global Real-Time Telemetry Stream Loop (every 2.5s when Live Telemetry is enabled)
+  useEffect(() => {
+    if (!state.settings.liveTelemetryUpdates) return;
+    const timer = window.setInterval(() => {
+      simulateGpsTick();
+    }, 2500);
+    return () => window.clearInterval(timer);
+  }, [state.settings.liveTelemetryUpdates, simulateGpsTick]);
+
+  // Periodic live telemetry checkpoint log in Recent Activity (every ~22s)
+  useEffect(() => {
+    if (!state.settings.liveTelemetryUpdates) return;
+    const logTimer = window.setInterval(() => {
+      setState((prev) => {
+        const active = prev.trucks.find((t) => t.id === prev.activeTruckId) ?? prev.trucks[0];
+        const nowStr = formatCurrentTime();
+        const event: ActivityItem = {
+          id: `act-live-${Date.now()}`,
+          time: nowStr,
+          message: `OBD-II & GPS heartbeat · ${active.plate}`,
+          detail: `${active.route.speedMph} km/h · ${active.obd.rpm.toLocaleString()} rpm · Bay ${active.tempCelsius.toFixed(1)}°C`,
+          type: "obd",
+          truckId: active.id,
+        };
+        return {
+          ...prev,
+          activities: [event, ...prev.activities].slice(0, 28),
+        };
+      });
+    }, 22000);
+    return () => window.clearInterval(logTimer);
+  }, [state.settings.liveTelemetryUpdates]);
 
   const markNotificationRead = useCallback((id: string) => {
     setState((prev) => ({
@@ -984,6 +1176,9 @@ export function HaulTrackProvider({ children }: { children: React.ReactNode }) {
     acknowledgeDtc,
     runDpfRegen,
     simulateGpsTick,
+    liveTickCount,
+    lastHeartbeat,
+    telemetryHistory,
     markNotificationRead,
     markAllNotificationsRead,
     updateSettings,

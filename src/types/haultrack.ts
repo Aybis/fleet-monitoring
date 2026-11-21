@@ -212,3 +212,12 @@ export interface ToastItem {
   variant?: "default" | "success" | "warning" | "destructive";
   undoAction?: () => void;
 }
+
+export interface TelemetrySample {
+  time: string;
+  rpm: number;
+  speedKmh: number;
+  boostKpa: number;
+  fuelRailMpa: number;
+  coolantTempC: number;
+}

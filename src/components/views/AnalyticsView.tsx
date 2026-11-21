@@ -89,7 +89,15 @@ function formatIdr(amount: number): string {
 }
 
 export function AnalyticsView() {
-  const { trucks, settings, selectTruck, setActivePage, pushToast } = useHaulTrack();
+  const {
+    trucks,
+    settings,
+    selectTruck,
+    setActivePage,
+    pushToast,
+    liveTickCount,
+    lastHeartbeat,
+  } = useHaulTrack();
 
   const [tab, setTab] = useState<HoTab>("overview");
   const [timeframe, setTimeframe] = useState<HoTimeframe>("30d");
@@ -217,6 +225,22 @@ export function AnalyticsView() {
 
     const preventableExposureM = Number((criticalUnits * 18.5 + warningUnits * 6.2).toFixed(1));
 
+    const movingUnits = filteredTrucks.filter((t) => t.status === "In Transit");
+    const liveAvgSpeed =
+      movingUnits.length > 0
+        ? Math.round(
+            movingUnits.reduce((sum, t) => sum + t.route.speedMph, 0) / movingUnits.length
+          )
+        : 0;
+    const liveBurnRateLhr = Number(
+      filteredTrucks
+        .reduce(
+          (sum, t) => sum + (t.status === "In Transit" ? (t.obd.rpm / 1000) * 6.4 : 2.1),
+          0
+        )
+        .toFixed(1)
+    );
+
     return {
       availabilityPct,
       avgCpk,
@@ -230,6 +254,8 @@ export function AnalyticsView() {
       warningUnits,
       totalCostM: Number(totalCostM.toFixed(1)),
       preventableExposureM,
+      liveAvgSpeed,
+      liveBurnRateLhr,
     };
   }, [filteredTrucks, filteredBranches, filteredSeriesMetrics, costTrendData]);
 
@@ -403,6 +429,39 @@ export function AnalyticsView() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Live Real-Time Telematics Heartbeat Strip */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-red-500/20 bg-gradient-to-r from-red-500/[0.06] via-card to-card px-4 py-2.5 text-xs">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="inline-flex items-center gap-2 font-extrabold text-red-700 dark:text-red-300">
+            <span className="relative flex h-2 w-2">
+              {settings.liveTelemetryUpdates && (
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+              )}
+              <span
+                className={cn(
+                  "relative inline-flex h-2 w-2 rounded-full",
+                  settings.liveTelemetryUpdates ? "bg-red-600" : "bg-slate-400"
+                )}
+              />
+            </span>
+            {settings.liveTelemetryUpdates
+              ? "REAL-TIME CAN-BUS & GPS STREAM"
+              : "TELEMETRY STREAM PAUSED"}
+          </span>
+          <span className="text-muted-foreground tabular-nums">
+            Avg Moving Speed:{" "}
+            <strong className="text-foreground">{hoKpis.liveAvgSpeed} km/h</strong>
+          </span>
+          <span className="text-muted-foreground tabular-nums">
+            Live Fleet Fuel Burn:{" "}
+            <strong className="text-foreground">{hoKpis.liveBurnRateLhr} L/hr</strong>
+          </span>
+        </div>
+        <span className="font-mono text-[11px] font-semibold text-muted-foreground tabular-nums">
+          Packet #{liveTickCount} · Synced {lastHeartbeat}
+        </span>
       </div>
 
       {/* 6 Head Office North-Star KPI Cards */}
