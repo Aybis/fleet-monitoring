@@ -24,6 +24,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LicensePlateBadge } from "@/components/ui/LicensePlateBadge";
+import { TermTooltip } from "@/components/ui/TermTooltip";
+import type { TechnicalTermKey } from "@/data/glossary";
 import { cn } from "@/lib/utils";
 
 export function ObdDiagnosticsView() {
@@ -90,11 +92,14 @@ export function ObdDiagnosticsView() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-[28px] font-extrabold leading-tight tracking-tight text-foreground">
-            ISUZU OBD-II &amp; J1939 Diagnostics
+            ISUZU <TermTooltip termKey="OBD">OBD-II &amp; J1939</TermTooltip> Diagnostics
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Live ECU sensor PIDs, active diesel trouble code meanings, freeze-frame snapshots, and
-            remote DPD regeneration.
+            Live <TermTooltip termKey="PID" showIcon={false}>ECU sensor PIDs</TermTooltip>, active
+            diesel <TermTooltip termKey="DTC" showIcon={false}>trouble code</TermTooltip> meanings,{" "}
+            <TermTooltip termKey="FREEZE_FRAME" showIcon={false}>freeze-frame</TermTooltip>{" "}
+            snapshots, and remote{" "}
+            <TermTooltip termKey="DPD" showIcon={false}>DPD regeneration</TermTooltip>.
           </p>
         </div>
 
@@ -258,66 +263,80 @@ export function ObdDiagnosticsView() {
 
         {/* Live OBD-II PID Sensor Telemetry Grid */}
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-8">
-          {[
-            {
-              label: "Engine RPM",
-              value: activeTruck.obd.rpm.toLocaleString(),
-              unit: "rpm",
-              icon: Gauge,
-              warn: activeTruck.obd.rpm > 2400,
-            },
-            {
-              label: "Coolant Temp",
-              value: `${activeTruck.obd.coolantTempC}°C`,
-              unit: "Spec 80–95°C",
-              icon: Thermometer,
-              warn: activeTruck.obd.coolantTempC >= 94,
-            },
-            {
-              label: "Oil Pressure",
-              value: `${activeTruck.obd.oilPressureKpa}`,
-              unit: "kPa",
-              icon: Droplets,
-              warn: activeTruck.obd.oilPressureKpa < 220,
-            },
-            {
-              label: "Turbo Boost",
-              value: `${activeTruck.obd.boostKpa}`,
-              unit: "kPa",
-              icon: Wind,
-              warn: false,
-            },
-            {
-              label: "Battery Bus",
-              value: `${activeTruck.obd.batteryVolts}V`,
-              unit: activeTruck.obd.batteryVolts > 18 ? "24V Dual" : "12V Bus",
-              icon: BatteryCharging,
-              warn:
-                (activeTruck.obd.batteryVolts > 18 && activeTruck.obd.batteryVolts < 24) ||
-                activeTruck.obd.batteryVolts < 12.2,
-            },
-            {
-              label: "DPD Soot Load",
-              value: `${activeTruck.obd.dpfSootPct}%`,
-              unit: activeTruck.obd.dpfSootPct >= 75 ? "Regen Needed" : "Normal",
-              icon: Flame,
-              warn: activeTruck.obd.dpfSootPct >= 75,
-            },
-            {
-              label: "DEF / AdBlue",
-              value: `${activeTruck.obd.defLevelPct}%`,
-              unit: "32.5% Urea",
-              icon: Droplets,
-              warn: activeTruck.obd.defLevelPct < 20,
-            },
-            {
-              label: "Fuel Rail",
-              value: `${activeTruck.obd.fuelRailMpa}`,
-              unit: "MPa",
-              icon: Activity,
-              warn: activeTruck.obd.fuelRailMpa < 80 && activeTruck.route.speedMph > 30,
-            },
-          ].map((pid) => {
+          {(
+            [
+              {
+                label: "Engine RPM",
+                value: activeTruck.obd.rpm.toLocaleString(),
+                unit: "rpm",
+                icon: Gauge,
+                warn: activeTruck.obd.rpm > 2400,
+                termKey: "PID",
+              },
+              {
+                label: "Coolant Temp",
+                value: `${activeTruck.obd.coolantTempC}°C`,
+                unit: "Spec 80–95°C",
+                icon: Thermometer,
+                warn: activeTruck.obd.coolantTempC >= 94,
+              },
+              {
+                label: "Oil Pressure",
+                value: `${activeTruck.obd.oilPressureKpa}`,
+                unit: "kPa",
+                icon: Droplets,
+                warn: activeTruck.obd.oilPressureKpa < 220,
+              },
+              {
+                label: "Turbo Boost",
+                value: `${activeTruck.obd.boostKpa}`,
+                unit: "kPa",
+                icon: Wind,
+                warn: false,
+                termKey: "TURBO_BOOST",
+              },
+              {
+                label: "Battery Bus",
+                value: `${activeTruck.obd.batteryVolts}V`,
+                unit: activeTruck.obd.batteryVolts > 18 ? "24V Dual" : "12V Bus",
+                icon: BatteryCharging,
+                warn:
+                  (activeTruck.obd.batteryVolts > 18 && activeTruck.obd.batteryVolts < 24) ||
+                  activeTruck.obd.batteryVolts < 12.2,
+              },
+              {
+                label: "DPD Soot Load",
+                value: `${activeTruck.obd.dpfSootPct}%`,
+                unit: activeTruck.obd.dpfSootPct >= 75 ? "Regen Needed" : "Normal",
+                icon: Flame,
+                warn: activeTruck.obd.dpfSootPct >= 75,
+                termKey: "DPD",
+              },
+              {
+                label: "DEF / AdBlue",
+                value: `${activeTruck.obd.defLevelPct}%`,
+                unit: "32.5% Urea",
+                icon: Droplets,
+                warn: activeTruck.obd.defLevelPct < 20,
+                termKey: "DEF",
+              },
+              {
+                label: "Fuel Rail",
+                value: `${activeTruck.obd.fuelRailMpa}`,
+                unit: "MPa",
+                icon: Activity,
+                warn: activeTruck.obd.fuelRailMpa < 80 && activeTruck.route.speedMph > 30,
+                termKey: "FUEL_RAIL",
+              },
+            ] as Array<{
+              label: string;
+              value: string;
+              unit: string;
+              icon: React.ComponentType<{ className?: string }>;
+              warn: boolean;
+              termKey?: TechnicalTermKey;
+            }>
+          ).map((pid) => {
             const Icon = pid.icon;
             return (
               <div
@@ -330,7 +349,13 @@ export function ObdDiagnosticsView() {
                 )}
               >
                 <div className="flex items-center justify-between text-[10px] font-medium text-muted-foreground">
-                  <span className="truncate">{pid.label}</span>
+                  {pid.termKey ? (
+                    <TermTooltip termKey={pid.termKey} showIcon={false} className="truncate">
+                      {pid.label}
+                    </TermTooltip>
+                  ) : (
+                    <span className="truncate">{pid.label}</span>
+                  )}
                   <Icon
                     className={cn("h-3.5 w-3.5 shrink-0", pid.warn ? "text-amber-500" : "text-red-600")}
                   />
@@ -398,9 +423,11 @@ export function ObdDiagnosticsView() {
                           {info.code}
                         </span>
                         {info.j1939Spn && (
-                          <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-[11px] font-semibold text-muted-foreground">
-                            {info.j1939Spn}
-                          </span>
+                          <TermTooltip termKey="SPN_FMI" showIcon={false}>
+                            <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-[11px] font-semibold text-muted-foreground">
+                              {info.j1939Spn}
+                            </span>
+                          </TermTooltip>
                         )}
                         <Badge
                           variant={

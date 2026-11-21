@@ -37,6 +37,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LicensePlateBadge } from "@/components/ui/LicensePlateBadge";
+import { TermTooltip } from "@/components/ui/TermTooltip";
 import { cn, formatTons } from "@/lib/utils";
 
 export function LiveMapView() {
@@ -126,7 +127,9 @@ export function LiveMapView() {
             </h1>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-600/10 px-3 py-1 text-[11px] font-extrabold text-red-700 dark:text-red-300">
               <ShieldCheck className="h-3.5 w-3.5" />
-              {registeredObdCount}/{trucks.length} Registered Isuzu OBD-II Online
+              <TermTooltip termKey="OBD" showIcon={false}>
+                {registeredObdCount}/{trucks.length} Registered Isuzu OBD-II Online
+              </TermTooltip>
             </span>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -348,10 +351,12 @@ export function LiveMapView() {
           </div>
 
           {/* Bottom-Left TNKB Plate Legend */}
-          <div className="pointer-events-none absolute bottom-3 left-3.5 z-[400] flex flex-wrap items-center gap-3 rounded-xl border border-border/80 bg-card/95 px-3 py-1.5 text-[11px] font-medium text-muted-foreground shadow-md backdrop-blur-md">
+          <div className="absolute bottom-3 left-3.5 z-[400] flex flex-wrap items-center gap-3 rounded-xl border border-border/80 bg-card/95 px-3 py-1.5 text-[11px] font-medium text-muted-foreground shadow-md backdrop-blur-md">
             <span className="inline-flex items-center gap-1.5">
               <span className="h-3 w-5 rounded-[3px] border border-slate-900 bg-[#facc15]" />
-              Plat Kuning (Angkutan Barang)
+              <TermTooltip termKey="TNKB" showIcon={false}>
+                Plat Kuning (Angkutan Barang)
+              </TermTooltip>
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="h-3 w-5 rounded-[3px] border border-slate-900 bg-white" />
@@ -359,8 +364,13 @@ export function LiveMapView() {
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-              OBD Alert
+              <TermTooltip termKey="DTC" showIcon={false}>
+                OBD Alert
+              </TermTooltip>
             </span>
+            <TermTooltip termKey="GEOFENCE" className="text-[11px]">
+              Geofence
+            </TermTooltip>
           </div>
 
           {/* Real Interactive Leaflet Map */}

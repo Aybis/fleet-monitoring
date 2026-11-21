@@ -12,6 +12,7 @@ import { SettingsView } from "@/components/views/SettingsView";
 import { DispatchModal } from "@/components/modals/DispatchModal";
 import { LiveTrackingModal } from "@/components/modals/LiveTrackingModal";
 import { ToastViewport } from "@/components/ui/ToastViewport";
+import { TooltipProvider } from "@/components/ui/TermTooltip";
 
 function HaulTrackShell() {
   const { activePage, toasts, dismissToast } = useHaulTrack();
@@ -46,8 +47,10 @@ function HaulTrackShell() {
 
 export default function App() {
   return (
-    <HaulTrackProvider>
-      <HaulTrackShell />
-    </HaulTrackProvider>
+    <TooltipProvider delayDuration={120}>
+      <HaulTrackProvider>
+        <HaulTrackShell />
+      </HaulTrackProvider>
+    </TooltipProvider>
   );
 }

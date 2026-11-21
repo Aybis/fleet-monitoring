@@ -4,6 +4,7 @@ import { getTruckLoadKg, getTruckLoadPct, useHaulTrack } from "@/context/HaulTra
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { TermTooltip } from "@/components/ui/TermTooltip";
 import {
   Dialog,
   DialogContent,
@@ -110,7 +111,8 @@ export function ReportsView() {
             Manifests &amp; Reports
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Generate live Bills of Lading, bay-level cargo manifests, and DOT compliance summaries.
+            Generate live <TermTooltip termKey="BOL">Bills of Lading (BOL)</TermTooltip>, bay-level
+            cargo manifests, and fleet compliance summaries.
           </p>
         </div>
         <Button onClick={exportFleetSummaryCsv} className="h-11 rounded-2xl px-5">

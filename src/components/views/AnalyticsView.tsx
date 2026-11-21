@@ -54,6 +54,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LicensePlateBadge } from "@/components/ui/LicensePlateBadge";
+import { TermTooltip } from "@/components/ui/TermTooltip";
 import type { IsuzuSeries } from "@/types/haultrack";
 import { cn, formatTons } from "@/lib/utils";
 
@@ -419,7 +420,7 @@ export function AnalyticsView() {
 
         <Card className="p-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Cost per KM (CPK)</span>
+            <TermTooltip termKey="CPK">Cost per KM (CPK)</TermTooltip>
             <Wallet className="h-4 w-4 text-red-600" />
           </div>
           <p className="mt-2 text-2xl font-extrabold tabular-nums">
@@ -432,7 +433,7 @@ export function AnalyticsView() {
 
         <Card className="p-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>National OTIF SLA</span>
+            <TermTooltip termKey="OTIF">National OTIF SLA</TermTooltip>
             <Clock className="h-4 w-4 text-sky-600" />
           </div>
           <p className="mt-2 text-2xl font-extrabold tabular-nums">{hoKpis.avgOtif}%</p>
@@ -443,7 +444,7 @@ export function AnalyticsView() {
 
         <Card className="p-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Empty Backhaul Ratio</span>
+            <TermTooltip termKey="BACKHAUL">Empty Backhaul Ratio</TermTooltip>
             <Scale className="h-4 w-4 text-amber-500" />
           </div>
           <p className="mt-2 text-2xl font-extrabold tabular-nums">{hoKpis.avgBackhaul}%</p>
@@ -459,7 +460,10 @@ export function AnalyticsView() {
           </div>
           <p className="mt-2 text-2xl font-extrabold tabular-nums">{hoKpis.avgFuelKmL} km/L</p>
           <p className="mt-1 text-[11px] text-amber-600 dark:text-amber-400">
-            16.8% idle fuel burn detected
+            <TermTooltip termKey="IDLE_TIME" showIcon={false}>
+              16.8% idle fuel burn
+            </TermTooltip>{" "}
+            detected
           </p>
         </Card>
 
@@ -470,7 +474,7 @@ export function AnalyticsView() {
           )}
         >
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>OBD Downtime Risk</span>
+            <TermTooltip termKey="DTC">OBD Downtime Risk</TermTooltip>
             <ShieldAlert className="h-4 w-4 text-amber-500" />
           </div>
           <p className="mt-2 text-2xl font-extrabold tabular-nums">
@@ -822,7 +826,8 @@ export function AnalyticsView() {
             {/* MTBF & Downtime by Isuzu Engine Family */}
             <Card className="p-5">
               <h3 className="text-sm font-extrabold text-foreground">
-                Engine Reliability: MTBF (Hours) &amp; 30-Day Downtime
+                Engine Reliability:{" "}
+                <TermTooltip termKey="MTBF">MTBF (Hours)</TermTooltip> &amp; 30-Day Downtime
               </h3>
               <p className="mb-3 text-xs text-muted-foreground">
                 Mean Time Between Failures across Isuzu diesel platforms (higher MTBF = stronger
@@ -888,12 +893,20 @@ export function AnalyticsView() {
               <table className="w-full text-left text-xs">
                 <thead className="border-b border-border bg-muted/50 text-[11px] font-semibold text-muted-foreground">
                   <tr>
-                    <th className="px-4 py-3">Vehicle &amp; Plat Nomor</th>
+                    <th className="px-4 py-3">
+                      <TermTooltip termKey="TNKB">Vehicle &amp; Plat Nomor</TermTooltip>
+                    </th>
                     <th className="px-4 py-3">Engine &amp; Odometer</th>
-                    <th className="px-4 py-3">DPD Soot</th>
+                    <th className="px-4 py-3">
+                      <TermTooltip termKey="DPD">DPD Soot</TermTooltip>
+                    </th>
                     <th className="px-4 py-3">Battery / Temp</th>
-                    <th className="px-4 py-3">Active DTCs</th>
-                    <th className="px-4 py-3">Next PM Service</th>
+                    <th className="px-4 py-3">
+                      <TermTooltip termKey="DTC">Active DTCs</TermTooltip>
+                    </th>
+                    <th className="px-4 py-3">
+                      <TermTooltip termKey="PM_SERVICE">Next PM Service</TermTooltip>
+                    </th>
                     <th className="px-4 py-3 text-right">Action</th>
                   </tr>
                 </thead>
@@ -1302,9 +1315,13 @@ export function AnalyticsView() {
                     <th className="px-4 py-3">Driver &amp; Unit</th>
                     <th className="px-4 py-3">Eco-Safety Score</th>
                     <th className="px-4 py-3">Fuel Economy</th>
-                    <th className="px-4 py-3">Idle Time %</th>
+                    <th className="px-4 py-3">
+                      <TermTooltip termKey="IDLE_TIME">Idle Time %</TermTooltip>
+                    </th>
                     <th className="px-4 py-3">Harsh / 1k km</th>
-                    <th className="px-4 py-3">OTIF %</th>
+                    <th className="px-4 py-3">
+                      <TermTooltip termKey="OTIF">OTIF %</TermTooltip>
+                    </th>
                     <th className="px-4 py-3">Distance (30d)</th>
                     <th className="px-4 py-3 text-right">Status</th>
                   </tr>
