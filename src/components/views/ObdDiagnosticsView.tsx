@@ -35,6 +35,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LicensePlateBadge } from "@/components/ui/LicensePlateBadge";
 import { TermTooltip } from "@/components/ui/TermTooltip";
+import { TablePagination } from "@/components/ui/TablePagination";
 import type { TechnicalTermKey } from "@/data/glossary";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +58,8 @@ export function ObdDiagnosticsView() {
 
   const [dtcSearch, setDtcSearch] = useState("");
   const [subsystemFilter, setSubsystemFilter] = useState("All");
+  const [decoderPage, setDecoderPage] = useState(1);
+  const [decoderPageSize, setDecoderPageSize] = useState(5);
   const [isScanning, setIsScanning] = useState(false);
 
   const obdHealth = getVehicleObdHealth(activeTruck);
@@ -89,6 +92,17 @@ export function ObdDiagnosticsView() {
       );
     });
   }, [dtcSearch, subsystemFilter]);
+
+  const decoderTotalPages = Math.max(1, Math.ceil(filteredLookupCodes.length / decoderPageSize));
+  const safeDecoderPage = Math.min(decoderPage, decoderTotalPages);
+  const paginatedLookupCodes = useMemo(
+    () =>
+      filteredLookupCodes.slice(
+        (safeDecoderPage - 1) * decoderPageSize,
+        safeDecoderPage * decoderPageSize
+      ),
+    [filteredLookupCodes, safeDecoderPage, decoderPageSize]
+  );
 
   const subsystems = [
     "All",
@@ -682,7 +696,10 @@ export function ObdDiagnosticsView() {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={dtcSearch}
-              onChange={(e) => setDtcSearch(e.target.value)}
+              onChange={(e) => {
+                setDtcSearch(e.target.value);
+                setDecoderPage(1);
+              }}
               placeholder="Search code (P2002, EGR, fuel)..."
               className="pl-8 text-xs"
             />
@@ -695,7 +712,10 @@ export function ObdDiagnosticsView() {
             <button
               key={sub}
               type="button"
-              onClick={() => setSubsystemFilter(sub)}
+              onClick={() => {
+                setSubsystemFilter(sub);
+                setDecoderPage(1);
+              }}
               className={cn(
                 "cursor-pointer rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition-colors",
                 subsystemFilter === sub
@@ -708,9 +728,9 @@ export function ObdDiagnosticsView() {
           ))}
         </div>
 
-        <div className="mt-4 overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-border bg-muted/50 text-[11px] font-semibold text-muted-foreground">
+        <div className="mt-4 max-h-[380px] overflow-auto rounded-xl border border-border">
+          <table className="w-full min-w-[740px] text-left text-xs">
+            <thead className="sticky top-0 z-10 border-b border-border bg-muted/95 text-[11px] font-semibold text-muted-foreground backdrop-blur-sm">
               <tr>
                 <th className="px-4 py-2.5">Code / J1939</th>
                 <th className="px-4 py-2.5">Subsystem</th>
@@ -720,7 +740,7 @@ export function ObdDiagnosticsView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filteredLookupCodes.map((c) => (
+              {paginatedLookupCodes.map((c) => (
                 <tr key={c.code} className="hover:bg-muted/30">
                   <td className="px-4 py-3 align-top">
                     <span className="inline-block rounded-md bg-red-600/12 px-2 py-0.5 font-mono text-xs font-extrabold text-red-700 dark:text-red-300">
@@ -762,6 +782,15 @@ export function ObdDiagnosticsView() {
             </tbody>
           </table>
         </div>
+
+        <TablePagination
+          page={safeDecoderPage}
+          pageSize={decoderPageSize}
+          totalItems={filteredLookupCodes.length}
+          onPageChange={setDecoderPage}
+          onPageSizeChange={setDecoderPageSize}
+          pageSizeOptions={[5, 10]}
+        />
       </Card>
     </div>
   );

@@ -1,13 +1,23 @@
+import { useState } from "react";
 import { RotateCcw, Building2, Scale, Bell, Moon } from "lucide-react";
 import { useHaulTrack } from "@/context/HaulTrackContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 export function SettingsView() {
   const { settings, updateSettings, resetDemoData, pushToast } = useHaulTrack();
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
 
   return (
     <div className="w-full space-y-5">
@@ -170,12 +180,39 @@ export function SettingsView() {
             GPS pins, and OBD-II codes.
           </p>
         </div>
-        <Button variant="outline" onClick={resetDemoData}>
+        <Button variant="outline" onClick={() => setConfirmResetOpen(true)}>
           <RotateCcw className="h-4 w-4" />
           Reset to Defaults
         </Button>
       </Card>
       </div>
+
+      {/* Confirmation Modal for Reset */}
+      <Dialog open={confirmResetOpen} onOpenChange={setConfirmResetOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Confirm Demo Data Reset?</DialogTitle>
+            <DialogDescription>
+              This will restore all 7 Isuzu vehicles, cargo bays, Indonesian GPS coordinates, and
+              OBD-II diagnostic codes back to their initial defaults.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmResetOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                resetDemoData();
+                setConfirmResetOpen(false);
+              }}
+            >
+              Confirm Reset
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

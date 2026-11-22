@@ -15,6 +15,7 @@ import { useHaulTrack } from "@/context/HaulTrackContext";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { TablePagination } from "@/components/ui/TablePagination";
 import {
   ActionMenu,
   ActionMenuTrigger,
@@ -51,6 +52,8 @@ export function ShipmentAssignmentPanel() {
   const [searchId, setSearchId] = useState("");
   const [sortBy, setSortBy] = useState<SortKey>("default");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [listPage, setListPage] = useState(1);
+  const [listPageSize, setListPageSize] = useState(5);
   const [previewShipment, setPreviewShipment] = useState<QueuedShipment | null>(null);
 
   const emptySlots = useMemo(
@@ -343,64 +346,73 @@ export function ShipmentAssignmentPanel() {
             ))}
           </div>
         ) : (
-          /* List View */
-          <div className="mt-4 overflow-x-auto rounded-xl border border-border">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-border bg-muted/50 text-[11px] font-semibold text-muted-foreground">
-                <tr>
-                  <th className="px-3.5 py-2.5">Shipment</th>
-                  <th className="px-3.5 py-2.5">Customer</th>
-                  <th className="px-3.5 py-2.5">Route</th>
-                  <th className="px-3.5 py-2.5">Cargo</th>
-                  <th className="px-3.5 py-2.5">Weight</th>
-                  <th className="px-3.5 py-2.5">Priority</th>
-                  <th className="px-3.5 py-2.5 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {filteredShipments.map((s) => (
-                  <tr
-                    key={s.id}
-                    className="transition-colors hover:bg-muted/35"
-                  >
-                    <td className="px-3.5 py-2.5 font-bold text-foreground tabular-nums">
-                      <button
-                        type="button"
-                        onClick={() => setPreviewShipment(s)}
-                        className="cursor-pointer hover:text-red-600 hover:underline"
-                      >
-                        {s.id}
-                      </button>
-                    </td>
-                    <td className="px-3.5 py-2.5 text-muted-foreground">{s.customer}</td>
-                    <td className="px-3.5 py-2.5 font-semibold">
-                      {s.originCode} → {s.destinationCode}
-                    </td>
-                    <td className="px-3.5 py-2.5 text-muted-foreground">
-                      {unitWord(s.cargoType, s.quantity)}
-                    </td>
-                    <td className="px-3.5 py-2.5 font-semibold tabular-nums">
-                      {formatWeight(s.weightKg, settings.weightUnit)}
-                    </td>
-                    <td className="px-3.5 py-2.5">
-                      <Badge variant={priorityBadgeVariant(s.priority)}>{s.priority}</Badge>
-                    </td>
-                    <td className="px-3.5 py-2.5 text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={!effectiveSlotId}
-                        onClick={() => assignShipmentToSlot(s.id, effectiveSlotId ?? undefined)}
-                        className="h-7 rounded-lg px-2.5 text-[11px] hover:border-red-500 hover:bg-red-600 hover:text-white"
-                      >
-                        + Assign {effectiveSlotId ?? ""}
-                      </Button>
-                    </td>
+          /* Scrollable & Paginated List View */
+          <>
+            <div className="mt-4 max-h-[340px] overflow-auto rounded-xl border border-border">
+              <table className="w-full min-w-[680px] text-left text-xs">
+                <thead className="sticky top-0 z-10 border-b border-border bg-muted/95 text-[11px] font-semibold text-muted-foreground backdrop-blur-sm">
+                  <tr>
+                    <th className="px-3.5 py-2.5">Shipment</th>
+                    <th className="px-3.5 py-2.5">Customer</th>
+                    <th className="px-3.5 py-2.5">Route</th>
+                    <th className="px-3.5 py-2.5">Cargo</th>
+                    <th className="px-3.5 py-2.5">Weight</th>
+                    <th className="px-3.5 py-2.5">Priority</th>
+                    <th className="px-3.5 py-2.5 text-right">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredShipments
+                    .slice((listPage - 1) * listPageSize, listPage * listPageSize)
+                    .map((s) => (
+                      <tr key={s.id} className="transition-colors hover:bg-muted/35">
+                        <td className="px-3.5 py-2.5 font-bold text-foreground tabular-nums">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewShipment(s)}
+                            className="cursor-pointer hover:text-red-600 hover:underline"
+                          >
+                            {s.id}
+                          </button>
+                        </td>
+                        <td className="px-3.5 py-2.5 text-muted-foreground">{s.customer}</td>
+                        <td className="px-3.5 py-2.5 font-semibold">
+                          {s.originCode} → {s.destinationCode}
+                        </td>
+                        <td className="px-3.5 py-2.5 text-muted-foreground">
+                          {unitWord(s.cargoType, s.quantity)}
+                        </td>
+                        <td className="px-3.5 py-2.5 font-semibold tabular-nums">
+                          {formatWeight(s.weightKg, settings.weightUnit)}
+                        </td>
+                        <td className="px-3.5 py-2.5">
+                          <Badge variant={priorityBadgeVariant(s.priority)}>{s.priority}</Badge>
+                        </td>
+                        <td className="px-3.5 py-2.5 text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={!effectiveSlotId}
+                            onClick={() => assignShipmentToSlot(s.id, effectiveSlotId ?? undefined)}
+                            className="h-7 rounded-lg px-2.5 text-[11px] hover:border-red-500 hover:bg-red-600 hover:text-white"
+                          >
+                            + Assign {effectiveSlotId ?? ""}
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+            <TablePagination
+              page={listPage}
+              pageSize={listPageSize}
+              totalItems={filteredShipments.length}
+              onPageChange={setListPage}
+              onPageSizeChange={setListPageSize}
+              pageSizeOptions={[5, 10]}
+            />
+          </>
         )}
       </Card>
 

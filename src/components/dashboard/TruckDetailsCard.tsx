@@ -10,8 +10,6 @@ import {
   ChevronDown,
   Star,
   Check,
-  Send,
-  PhoneCall,
 } from "lucide-react";
 import { useHaulTrack } from "@/context/HaulTrackContext";
 import { CITY_HUBS, DOCK_OPTIONS } from "@/data/initialData";
@@ -20,6 +18,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { LicensePlateBadge } from "@/components/ui/LicensePlateBadge";
+import {
+  DriverCommsDrawer,
+  type CommsDrawerTab,
+} from "@/components/panels/DriverCommsDrawer";
 import {
   Dialog,
   DialogContent,
@@ -48,14 +50,14 @@ export function TruckDetailsCard() {
     updateTruckRoute,
     setActivePage,
     setDispatchModalOpen,
-    sendDriverMessage,
-    pushToast,
   } = useHaulTrack();
 
   const [driverModalOpen, setDriverModalOpen] = useState(false);
   const [routeModalOpen, setRouteModalOpen] = useState(false);
-  const [callModalOpen, setCallModalOpen] = useState(false);
-  const [chatModalOpen, setChatModalOpen] = useState(false);
+
+  // Slide-over Right Bar state for Chat, Voice Call, and Driver/Vehicle Details
+  const [commsOpen, setCommsOpen] = useState(false);
+  const [commsTab, setCommsTab] = useState<CommsDrawerTab>("chat");
 
   // Route edit form state
   const [originCode, setOriginCode] = useState(activeTruck.route.originCode);
@@ -63,20 +65,10 @@ export function TruckDetailsCard() {
   const [dock, setDock] = useState(activeTruck.dock);
   const [startedAt, setStartedAt] = useState(activeTruck.startedAt);
 
-  // Driver chat state
-  const [chatText, setChatText] = useState("");
-  const [chatHistory, setChatHistory] = useState<Array<{ from: "ops" | "driver"; text: string; time: string }>>([
-    {
-      from: "driver",
-      text: "Checked in at Karawang Dock #3. Rear trailer doors open and OBD-II telemetry online.",
-      time: "08:50 WIB",
-    },
-    {
-      from: "ops",
-      text: "Copy Budi. Loading final floor pallets C4–C5, then ready for A5 before Tol Cipali.",
-      time: "09:10 WIB",
-    },
-  ]);
+  const openCommsDrawer = (tab: CommsDrawerTab) => {
+    setCommsTab(tab);
+    setCommsOpen(true);
+  };
 
   const openRouteEditor = () => {
     setOriginCode(activeTruck.route.originCode);
@@ -99,19 +91,6 @@ export function TruckDetailsCard() {
       startedAt,
     });
     setRouteModalOpen(false);
-  };
-
-  const handleSendChat = (textToSend?: string) => {
-    const clean = (textToSend ?? chatText).trim();
-    if (!clean) return;
-    const time = new Date().toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-    setChatHistory((prev) => [...prev, { from: "ops", text: clean, time }]);
-    sendDriverMessage(activeDriver.name, clean);
-    setChatText("");
   };
 
   const statusTone =
@@ -160,7 +139,7 @@ export function TruckDetailsCard() {
                   onSelect={() => selectTruck(t.id)}
                   className="justify-between"
                 >
-                  <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex min-w-0 items-center gap-2">
                     <Truck className="h-3.5 w-3.5 shrink-0 text-red-600" />
                     <div className="min-w-0">
                       <p className="text-xs font-bold">
@@ -170,7 +149,7 @@ export function TruckDetailsCard() {
                         </span>
                       </p>
                       <p className="truncate text-[11px] text-muted-foreground">
-                        {t.model} · {t.route.originCode} → {t.route.destinationCode}
+                        {t.plate} · {t.route.originCode} → {t.route.destinationCode}
                       </p>
                     </div>
                   </div>
@@ -183,7 +162,7 @@ export function TruckDetailsCard() {
           <button
             type="button"
             onClick={() => setDispatchModalOpen(true)}
-            title="Click to update dispatch status"
+            title="Click to confirm dispatch status"
             className={cn(
               "inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-opacity hover:opacity-85",
               statusTone
@@ -194,35 +173,40 @@ export function TruckDetailsCard() {
           </button>
         </div>
 
-        {/* Driver Row */}
+        {/* Driver Row — Clicking opens Right Bar with Driver & Vehicle Details; Phone/Chat open Call/Chat in Right Bar */}
         <div className="mt-4 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5 min-w-0">
+          <button
+            type="button"
+            onClick={() => openCommsDrawer("details")}
+            title="View driver & vehicle details in right panel"
+            className="group flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-xl p-1 -ml-1 text-left transition-colors hover:bg-muted/60"
+          >
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/15 text-red-700 dark:bg-red-500/20 dark:text-red-300">
               <Truck className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <p className="text-[11px] font-medium text-muted-foreground">Driver</p>
-              <p className="truncate text-[14px] font-bold text-foreground">
+              <p className="text-[11px] font-medium text-muted-foreground">Driver · View Details</p>
+              <p className="truncate text-[14px] font-bold text-foreground group-hover:text-red-600 dark:group-hover:text-red-400">
                 {activeDriver.name}
               </p>
             </div>
-          </div>
+          </button>
 
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex shrink-0 items-center gap-1.5">
             <button
               type="button"
-              onClick={() => setCallModalOpen(true)}
+              onClick={() => openCommsDrawer("call")}
               aria-label={`Call ${activeDriver.name}`}
-              title={`Call ${activeDriver.name}`}
+              title={`Open Voice Call bar with ${activeDriver.name}`}
               className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-border bg-background text-foreground transition-colors hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-700 dark:hover:text-red-300"
             >
               <Phone className="h-3.5 w-3.5" />
             </button>
             <button
               type="button"
-              onClick={() => setChatModalOpen(true)}
+              onClick={() => openCommsDrawer("chat")}
               aria-label={`Message ${activeDriver.name}`}
-              title={`Message ${activeDriver.name}`}
+              title={`Open Cab Chat bar with ${activeDriver.name}`}
               className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-border bg-background text-foreground transition-colors hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-700 dark:hover:text-red-300"
             >
               <MessageSquare className="h-3.5 w-3.5" />
@@ -230,7 +214,7 @@ export function TruckDetailsCard() {
           </div>
         </div>
 
-        {/* Truck ID / Plate / Dock / Started */}
+        {/* Plate No. / Dock / Started */}
         <div className="mt-4 grid grid-cols-3 gap-2 border-y border-border/70 py-3">
           <div>
             <p className="text-[11px] text-muted-foreground">Plate No.</p>
@@ -270,7 +254,7 @@ export function TruckDetailsCard() {
             <button
               type="button"
               onClick={() => setActivePage("map")}
-              title="Open ISUZU Live Fleet GPS Map"
+              title="Open HORUS Live Fleet GPS Map"
               className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-slate-900 text-white shadow-sm transition-transform hover:scale-105 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-500"
             >
               <ArrowRight className="h-3.5 w-3.5" />
@@ -311,16 +295,23 @@ export function TruckDetailsCard() {
         </div>
       </Card>
 
-      {/* Change Driver Dialog */}
+      {/* Right Slide-Over Bar for Cab Chat, Voice Call & Driver/Vehicle Details */}
+      <DriverCommsDrawer
+        open={commsOpen}
+        initialTab={commsTab}
+        onClose={() => setCommsOpen(false)}
+      />
+
+      {/* Change Driver Confirmation Modal */}
       <Dialog open={driverModalOpen} onOpenChange={setDriverModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reassign Driver for {activeTruck.id}</DialogTitle>
+            <DialogTitle>Confirm Driver Reassignment — {activeTruck.id}</DialogTitle>
             <DialogDescription>
-              Select a certified commercial driver currently on roster. Shift logs update immediately.
+              Select a certified commercial driver to reassign onto {activeTruck.plate}.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-2">
+          <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
             {drivers.map((drv) => {
               const isCurrent = drv.id === activeDriver.id;
               return (
@@ -357,11 +348,9 @@ export function TruckDetailsCard() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={drv.status === "Available" ? "express" : "secondary"}>
-                      {isCurrent ? "Assigned" : drv.status}
-                    </Badge>
-                  </div>
+                  <Badge variant={drv.status === "Available" ? "express" : "secondary"}>
+                    {isCurrent ? "Assigned" : drv.status}
+                  </Badge>
                 </button>
               );
             })}
@@ -369,11 +358,11 @@ export function TruckDetailsCard() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Route Dialog */}
+      {/* Edit Route Confirmation Modal */}
       <Dialog open={routeModalOpen} onOpenChange={setRouteModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Route & Dock — {activeTruck.id}</DialogTitle>
+            <DialogTitle>Confirm Route &amp; Dock Update — {activeTruck.id}</DialogTitle>
             <DialogDescription>
               Update corridor origin, destination hub, loading dock, and scheduled departure.
             </DialogDescription>
@@ -438,7 +427,7 @@ export function TruckDetailsCard() {
                 <Input
                   value={startedAt}
                   onChange={(e) => setStartedAt(e.target.value)}
-                  placeholder="08:34 AM"
+                  placeholder="08:34 WIB"
                 />
               </div>
             </div>
@@ -447,117 +436,8 @@ export function TruckDetailsCard() {
               <Button type="button" variant="outline" onClick={() => setRouteModalOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit">Save Route Changes</Button>
+              <Button type="submit">Confirm Route Update</Button>
             </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Call Driver Dialog */}
-      <Dialog open={callModalOpen} onOpenChange={setCallModalOpen}>
-        <DialogContent className="max-w-sm text-center">
-          <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/15 text-red-600 dark:text-red-400">
-            <PhoneCall className="h-7 w-7 animate-pulse" />
-          </div>
-          <DialogTitle className="text-center">Calling {activeDriver.name}</DialogTitle>
-          <DialogDescription className="text-center">
-            Cab Radio Bridge · {activeDriver.phone}
-          </DialogDescription>
-          <div className="mt-4 rounded-xl bg-muted/60 px-4 py-3 text-xs text-muted-foreground">
-            Vehicle <strong className="text-foreground">{activeTruck.id}</strong> ·{" "}
-            {activeTruck.route.currentLocation}
-          </div>
-          <div className="mt-5 flex justify-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setCallModalOpen(false);
-                pushToast({
-                  title: "Voice call ended",
-                  description: `Logged dispatch call with ${activeDriver.name}.`,
-                });
-              }}
-            >
-              End Call
-            </Button>
-            <Button
-              onClick={() => {
-                setCallModalOpen(false);
-                setChatModalOpen(true);
-              }}
-            >
-              Switch to Cab Chat
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Message Driver Dialog */}
-      <Dialog open={chatModalOpen} onOpenChange={setChatModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Cab Dispatch Chat — {activeDriver.name}</DialogTitle>
-            <DialogDescription>
-              Direct telemetry link to {activeTruck.id} ({activeDriver.phone})
-            </DialogDescription>
-          </DialogHeader>
-          <div className="max-h-60 space-y-2.5 overflow-y-auto rounded-xl bg-muted/40 p-3">
-            {chatHistory.map((msg, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "flex flex-col",
-                  msg.from === "ops" ? "items-end" : "items-start"
-                )}
-              >
-                <div
-                  className={cn(
-                    "max-w-[82%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed",
-                    msg.from === "ops"
-                      ? "bg-red-600 text-white"
-                      : "border border-border bg-card text-foreground"
-                  )}
-                >
-                  {msg.text}
-                </div>
-                <span className="mt-1 text-[10px] text-muted-foreground">{msg.time}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Quick dispatch replies */}
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {[
-              "Confirm A3 strap tension",
-              "Proceed to Dock #3 gate",
-              "Send updated ETA",
-            ].map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                onClick={() => handleSendChat(preset)}
-                className="cursor-pointer rounded-full border border-border bg-muted/50 px-2.5 py-1 text-[11px] font-medium text-foreground transition-colors hover:border-red-500/50 hover:bg-red-500/10"
-              >
-                {preset}
-              </button>
-            ))}
-          </div>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSendChat();
-            }}
-            className="mt-3 flex gap-2"
-          >
-            <Input
-              value={chatText}
-              onChange={(e) => setChatText(e.target.value)}
-              placeholder={`Message ${activeDriver.name}...`}
-            />
-            <Button type="submit" size="icon" className="h-9 w-9 shrink-0 rounded-xl">
-              <Send className="h-4 w-4" />
-            </Button>
           </form>
         </DialogContent>
       </Dialog>

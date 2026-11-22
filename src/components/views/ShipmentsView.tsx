@@ -15,6 +15,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TablePagination } from "@/components/ui/TablePagination";
 import {
   Dialog,
   DialogContent,
@@ -43,7 +44,10 @@ export function ShipmentsView() {
   const [tab, setTab] = useState<"all" | "queued" | "loaded">("all");
   const [priorityFilter, setPriorityFilter] = useState<"All" | PriorityLevel>("All");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [createOpen, setCreateOpen] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Create shipment form state
   const [title, setTitle] = useState("");
@@ -119,6 +123,19 @@ export function ShipmentsView() {
   const totalLoadedKg = allRows
     .filter((r) => r.state === "Loaded")
     .reduce((sum, r) => sum + r.weightKg, 0);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedRows = useMemo(
+    () => filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [filtered, currentPage, pageSize]
+  );
+
+  const formatCargoUnit = (type: CargoType, qty: number) => {
+    if (type === "Box") return qty === 1 ? "1 box" : `${qty} boxes`;
+    if (type === "Crate") return qty === 1 ? "1 crate" : `${qty} crates`;
+    return qty === 1 ? "1 pallet" : `${qty} pallets`;
+  };
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -207,7 +224,10 @@ export function ShipmentsView() {
               <button
                 key={key}
                 type="button"
-                onClick={() => setTab(key)}
+                onClick={() => {
+                  setTab(key);
+                  setPage(1);
+                }}
                 className={cn(
                   "cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
                   tab === key
@@ -225,7 +245,10 @@ export function ShipmentsView() {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
                 placeholder="Filter ID, customer, route..."
                 className="pl-8 text-xs"
               />
@@ -236,7 +259,10 @@ export function ShipmentsView() {
                 <button
                   key={p}
                   type="button"
-                  onClick={() => setPriorityFilter(p)}
+                  onClick={() => {
+                    setPriorityFilter(p);
+                    setPage(1);
+                  }}
                   className={cn(
                     "cursor-pointer rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors",
                     priorityFilter === p
@@ -251,9 +277,9 @@ export function ShipmentsView() {
           </div>
         </div>
 
-        <div className="mt-4 overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-border bg-muted/45 text-[11px] font-semibold text-muted-foreground">
+        <div className="mt-4 max-h-[460px] overflow-auto rounded-xl border border-border">
+          <table className="w-full min-w-[760px] text-left text-xs">
+            <thead className="sticky top-0 z-10 border-b border-border bg-muted/95 text-[11px] font-semibold text-muted-foreground backdrop-blur-sm">
               <tr>
                 <th className="px-4 py-3">Shipment</th>
                 <th className="px-4 py-3">Customer &amp; Contents</th>
@@ -265,7 +291,7 @@ export function ShipmentsView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filtered.map((row) => (
+              {paginatedRows.map((row) => (
                 <tr key={`${row.state}-${row.id}-${row.slotId ?? ""}`} className="hover:bg-muted/30">
                   <td className="px-4 py-3 font-extrabold text-foreground tabular-nums">
                     <div className="flex items-center gap-2">
@@ -283,7 +309,7 @@ export function ShipmentsView() {
                       {formatWeight(row.weightKg, settings.weightUnit)}
                     </p>
                     <p className="text-[11px] text-muted-foreground">
-                      {row.quantity} {row.cargoType.toLowerCase()}s · {row.method}
+                      {formatCargoUnit(row.cargoType, row.quantity)} · {row.method}
                     </p>
                   </td>
                   <td className="px-4 py-3">
@@ -326,7 +352,7 @@ export function ShipmentsView() {
                         </Button>
                         <button
                           type="button"
-                          onClick={() => deleteQueuedShipment(row.id)}
+                          onClick={() => setConfirmDeleteId(row.id)}
                           aria-label={`Remove ${row.id}`}
                           className="cursor-pointer rounded-lg p-1.5 text-muted-foreground hover:bg-red-500/10 hover:text-red-600"
                         >
@@ -354,7 +380,47 @@ export function ShipmentsView() {
             </tbody>
           </table>
         </div>
+
+        <TablePagination
+          page={currentPage}
+          pageSize={pageSize}
+          totalItems={filtered.length}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          pageSizeOptions={[5, 10, 20]}
+        />
       </Card>
+
+      {/* Confirm Delete Shipment Modal (Confirmation Action) */}
+      <Dialog
+        open={Boolean(confirmDeleteId)}
+        onOpenChange={(open) => !open && setConfirmDeleteId(null)}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Remove Queued Shipment?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove{" "}
+              <strong className="text-foreground">{confirmDeleteId}</strong> from the dock staging
+              queue? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDeleteId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (confirmDeleteId) deleteQueuedShipment(confirmDeleteId);
+                setConfirmDeleteId(null);
+              }}
+            >
+              Confirm Remove
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Create New Shipment Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

@@ -55,6 +55,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LicensePlateBadge } from "@/components/ui/LicensePlateBadge";
 import { TermTooltip } from "@/components/ui/TermTooltip";
+import { TablePagination } from "@/components/ui/TablePagination";
 import type { IsuzuSeries } from "@/types/haultrack";
 import { cn, formatTons } from "@/lib/utils";
 
@@ -103,6 +104,10 @@ export function AnalyticsView() {
   const [timeframe, setTimeframe] = useState<HoTimeframe>("30d");
   const [region, setRegion] = useState<HoRegion>("ALL");
   const [seriesFilter, setSeriesFilter] = useState<"ALL" | IsuzuSeries>("ALL");
+  const [pmPage, setPmPage] = useState(1);
+  const [pmPageSize, setPmPageSize] = useState(5);
+  const [driverPage, setDriverPage] = useState(1);
+  const [driverPageSize, setDriverPageSize] = useState(5);
 
   // Filter live trucks by HO Region & Series
   const filteredTrucks = useMemo(
@@ -948,9 +953,9 @@ export function AnalyticsView() {
               <Badge variant="outline">Synced with OBD-II Telematics</Badge>
             </div>
 
-            <div className="overflow-x-auto rounded-xl border border-border">
-              <table className="w-full text-left text-xs">
-                <thead className="border-b border-border bg-muted/50 text-[11px] font-semibold text-muted-foreground">
+            <div className="max-h-[380px] overflow-auto rounded-xl border border-border">
+              <table className="w-full min-w-[780px] text-left text-xs">
+                <thead className="sticky top-0 z-10 border-b border-border bg-muted/95 text-[11px] font-semibold text-muted-foreground backdrop-blur-sm">
                   <tr>
                     <th className="px-4 py-3">
                       <TermTooltip termKey="TNKB">Vehicle &amp; Plat Nomor</TermTooltip>
@@ -970,7 +975,9 @@ export function AnalyticsView() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filteredTrucks.map((t) => {
+                  {filteredTrucks
+                    .slice((pmPage - 1) * pmPageSize, pmPage * pmPageSize)
+                    .map((t) => {
                     const health = getVehicleObdHealth(t);
                     const nextPmKm = Math.ceil((t.odometerKm + 1) / 10000) * 10000;
                     const kmLeft = nextPmKm - t.odometerKm;
@@ -1083,6 +1090,14 @@ export function AnalyticsView() {
                 </tbody>
               </table>
             </div>
+            <TablePagination
+              page={pmPage}
+              pageSize={pmPageSize}
+              totalItems={filteredTrucks.length}
+              onPageChange={setPmPage}
+              onPageSizeChange={setPmPageSize}
+              pageSizeOptions={[5, 10]}
+            />
           </Card>
         </div>
       )}
@@ -1198,9 +1213,9 @@ export function AnalyticsView() {
             <p className="mb-3 text-xs text-muted-foreground">
               Full operational &amp; cost-efficiency ranking across all regional Isuzu branches
             </p>
-            <div className="overflow-x-auto rounded-xl border border-border">
-              <table className="w-full text-left text-xs">
-                <thead className="border-b border-border bg-muted/50 text-[11px] font-semibold text-muted-foreground">
+            <div className="max-h-[380px] overflow-auto rounded-xl border border-border">
+              <table className="w-full min-w-[780px] text-left text-xs">
+                <thead className="sticky top-0 z-10 border-b border-border bg-muted/95 text-[11px] font-semibold text-muted-foreground backdrop-blur-sm">
                   <tr>
                     <th className="px-4 py-3">Branch &amp; Dealer Hub</th>
                     <th className="px-4 py-3">Trips / Tons</th>
@@ -1259,6 +1274,12 @@ export function AnalyticsView() {
                 </tbody>
               </table>
             </div>
+            <TablePagination
+              page={1}
+              pageSize={5}
+              totalItems={filteredBranches.length}
+              onPageChange={() => {}}
+            />
           </Card>
         </div>
       )}
@@ -1367,9 +1388,9 @@ export function AnalyticsView() {
               OBD-verified performance across {filteredDrivers.length} active Isuzu drivers (30-day
               window)
             </p>
-            <div className="overflow-x-auto rounded-xl border border-border">
-              <table className="w-full text-left text-xs">
-                <thead className="border-b border-border bg-muted/50 text-[11px] font-semibold text-muted-foreground">
+            <div className="max-h-[380px] overflow-auto rounded-xl border border-border">
+              <table className="w-full min-w-[780px] text-left text-xs">
+                <thead className="sticky top-0 z-10 border-b border-border bg-muted/95 text-[11px] font-semibold text-muted-foreground backdrop-blur-sm">
                   <tr>
                     <th className="px-4 py-3">Driver &amp; Unit</th>
                     <th className="px-4 py-3">Eco-Safety Score</th>
@@ -1386,7 +1407,9 @@ export function AnalyticsView() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filteredDrivers.map((d) => (
+                  {filteredDrivers
+                    .slice((driverPage - 1) * driverPageSize, driverPage * driverPageSize)
+                    .map((d) => (
                     <tr key={d.driverId} className="hover:bg-muted/30">
                       <td className="px-4 py-3">
                         <p className="font-extrabold text-foreground">{d.name}</p>
@@ -1446,6 +1469,14 @@ export function AnalyticsView() {
                 </tbody>
               </table>
             </div>
+            <TablePagination
+              page={driverPage}
+              pageSize={driverPageSize}
+              totalItems={filteredDrivers.length}
+              onPageChange={setDriverPage}
+              onPageSizeChange={setDriverPageSize}
+              pageSizeOptions={[5, 10]}
+            />
           </Card>
         </div>
       )}
