@@ -118,7 +118,7 @@ export function LiveMapView() {
         <div>
           <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="text-[28px] font-extrabold leading-tight tracking-tight text-foreground">
-              ISUZU Indonesia Live OBD Map
+              HORUS — Indonesia Live OBD Map
             </h1>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-600/10 px-3 py-1 text-[11px] font-extrabold text-red-700 dark:text-red-300">
               <ShieldCheck className="h-3.5 w-3.5" />

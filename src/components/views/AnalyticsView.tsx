@@ -318,7 +318,7 @@ export function AnalyticsView() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `isuzu-ho-executive-analytics-${timeframe}-${region.toLowerCase()}.csv`;
+    link.download = `horus-ho-executive-analytics-${timeframe}-${region.toLowerCase()}.csv`;
     link.click();
     URL.revokeObjectURL(url);
 
@@ -340,11 +340,11 @@ export function AnalyticsView() {
               Head Office (HO) View
             </span>
             <span className="rounded-lg border border-border bg-card px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
-              PT Isuzu Astra Motor Indonesia · National Command
+              HORUS · PT Isuzu Astra Motor Indonesia · National Command
             </span>
           </div>
           <h1 className="mt-2 text-[28px] font-extrabold leading-tight tracking-tight text-foreground">
-            Executive Fleet &amp; Telematics Analytics
+            HORUS Executive Fleet &amp; Telematics Analytics
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Board-level visibility into Cost per KM (CPK), Fleet Uptime, Backhaul Efficiency,

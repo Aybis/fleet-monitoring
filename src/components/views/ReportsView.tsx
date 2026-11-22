@@ -92,13 +92,13 @@ export function ReportsView() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "isuzu-fleet-summary.csv";
+    link.download = "horus-isuzu-fleet-summary.csv";
     link.click();
     URL.revokeObjectURL(url);
 
     pushToast({
-      title: "ISUZU Fleet summary exported",
-      description: "Saved isuzu-fleet-summary.csv with live utilization data.",
+      title: "HORUS Fleet summary exported",
+      description: "Saved horus-isuzu-fleet-summary.csv with live utilization data.",
       variant: "success",
     });
   };

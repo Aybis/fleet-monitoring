@@ -107,7 +107,7 @@ export function ObdDiagnosticsView() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-[28px] font-extrabold leading-tight tracking-tight text-foreground">
-            ISUZU <TermTooltip termKey="OBD">OBD-II &amp; J1939</TermTooltip> Diagnostics
+            HORUS <TermTooltip termKey="OBD">OBD-II &amp; J1939</TermTooltip> Diagnostics
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Live <TermTooltip termKey="PID" showIcon={false}>ECU sensor PIDs</TermTooltip>, active

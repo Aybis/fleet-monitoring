@@ -125,29 +125,36 @@ export function Sidebar() {
             <button
               type="button"
               onClick={() => setActivePage("dashboard")}
-              title="ISUZU FleetConnect — Commercial Telematics"
+              title="HORUS — ISUZU All-Seeing Fleet Intelligence"
               className="group flex cursor-pointer items-center gap-2 rounded-xl transition-transform duration-200 hover:scale-[1.03] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
             >
-              <div className="flex h-9 w-[82px] shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-[#e60012] to-[#c8102e] px-2 shadow-[0_4px_16px_rgba(230,0,18,0.45)]">
-                <svg viewBox="0 0 120 26" className="h-4 w-full" fill="none" aria-label="ISUZU">
-                  <text
-                    x="60"
-                    y="20"
-                    textAnchor="middle"
-                    fill="#ffffff"
-                    fontFamily="Plus Jakarta Sans, Inter, sans-serif"
-                    fontWeight="900"
-                    fontSize="21"
-                    letterSpacing="2.4"
-                  >
-                    ISUZU
-                  </text>
-                </svg>
+              <div className="flex flex-col items-center">
+                <div className="flex h-9 w-[82px] shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-[#e60012] to-[#c8102e] px-2 shadow-[0_4px_16px_rgba(230,0,18,0.45)]">
+                  <svg viewBox="0 0 120 26" className="h-4 w-full" fill="none" aria-label="ISUZU">
+                    <text
+                      x="60"
+                      y="20"
+                      textAnchor="middle"
+                      fill="#ffffff"
+                      fontFamily="Plus Jakarta Sans, Inter, sans-serif"
+                      fontWeight="900"
+                      fontSize="21"
+                      letterSpacing="2.4"
+                    >
+                      ISUZU
+                    </text>
+                  </svg>
+                </div>
+                {!expanded && (
+                  <span className="mt-1 text-[9px] font-black uppercase tracking-[0.22em] text-red-200/85">
+                    HORUS
+                  </span>
+                )}
               </div>
               {expanded && (
                 <div className="overflow-hidden text-left">
-                  <p className="truncate text-[11px] font-extrabold tracking-wide text-white">
-                    FleetConnect
+                  <p className="truncate text-xs font-black tracking-[0.14em] text-white">
+                    HORUS
                   </p>
                   <p className="truncate text-[9px] font-medium text-red-200/70">
                     Indonesia Ops

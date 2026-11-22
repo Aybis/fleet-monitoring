@@ -1111,8 +1111,8 @@ export function HaulTrackProvider({ children }: { children: React.ReactNode }) {
       selectedSlotId: "A5",
     });
     pushToast({
-      title: "ISUZU FleetConnect reset",
-      description: "All 5 Isuzu vehicles, cargo bays, GPS pins, and OBD-II codes restored.",
+      title: "HORUS Fleet Intelligence reset",
+      description: "All 7 Isuzu vehicles, cargo bays, GPS pins, and OBD-II codes restored.",
       variant: "success",
     });
   }, [pushToast]);

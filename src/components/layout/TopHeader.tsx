@@ -145,7 +145,7 @@ export function TopHeader() {
 
   return (
     <header className="flex flex-wrap items-center justify-between gap-4 pb-5 pt-1">
-      {/* Authentic ISUZU FleetConnect Brand Lockup */}
+      {/* Authentic HORUS · ISUZU Brand Lockup */}
       <button
         type="button"
         onClick={() => setActivePage("dashboard")}
@@ -153,15 +153,15 @@ export function TopHeader() {
       >
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
-            <span className="text-[22px] font-black leading-none tracking-[0.09em] text-[#e60012] dark:text-[#ff3b4e]">
-              ISUZU
+            <span className="text-[22px] font-black leading-none tracking-[0.12em] text-foreground">
+              HORUS
             </span>
-            <span className="rounded-md bg-red-600/10 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-red-700 dark:text-red-300">
-              FleetConnect
+            <span className="inline-flex items-center gap-1 rounded-md bg-[#e60012] px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-white shadow-xs">
+              ISUZU
             </span>
           </div>
           <span className="mt-1 text-[11px] font-medium text-muted-foreground">
-            Commercial Cargo · Live GPS · OBD-II Telematics
+            All-Seeing Fleet Oversight · Live GPS · OBD-II
           </span>
         </div>
       </button>
@@ -446,7 +446,7 @@ export function TopHeader() {
           <PopoverContent className="w-[360px] p-0 overflow-hidden">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <div>
-                <h4 className="text-sm font-bold">ISUZU Fleet &amp; OBD Alerts</h4>
+                <h4 className="text-sm font-bold">HORUS · Fleet &amp; OBD Alerts</h4>
                 <p className="text-[11px] text-muted-foreground">
                   {unreadCount} unread telemetry &amp; dispatch notices
                 </p>
