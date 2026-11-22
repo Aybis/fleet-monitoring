@@ -27,6 +27,7 @@ import {
   ActionMenuDivider,
 } from "@/components/ui/menu";
 import { Badge } from "@/components/ui/badge";
+import { HorusEyeLogo } from "@/components/ui/HorusEyeLogo";
 import { cn, formatWeight } from "@/lib/utils";
 
 export function TopHeader() {
@@ -145,19 +146,20 @@ export function TopHeader() {
 
   return (
     <header className="flex flex-wrap items-center justify-between gap-4 pb-5 pt-1">
-      {/* Authentic HORUS · ISUZU Brand Lockup */}
+      {/* Authentic HORUS Eye Brand Lockup */}
       <button
         type="button"
         onClick={() => setActivePage("dashboard")}
         className="flex cursor-pointer items-center gap-2.5 text-left transition-opacity hover:opacity-85"
       >
+        <HorusEyeLogo variant="mark" className="h-8 w-11 text-[#e60012] dark:text-[#ff3b4e]" />
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
-            <span className="text-[22px] font-black leading-none tracking-[0.12em] text-foreground">
+            <span className="text-[22px] font-black leading-none tracking-[0.16em] text-foreground">
               HORUS
             </span>
-            <span className="inline-flex items-center gap-1 rounded-md bg-[#e60012] px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-white shadow-xs">
-              ISUZU
+            <span className="inline-flex items-center rounded-md bg-red-600/12 px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wider text-red-700 dark:text-red-300">
+              Fleet Eye
             </span>
           </div>
           <span className="mt-1 text-[11px] font-medium text-muted-foreground">
