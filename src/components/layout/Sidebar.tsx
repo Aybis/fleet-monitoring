@@ -111,7 +111,7 @@ export function Sidebar() {
       <aside
         aria-label="Primary navigation"
         className={cn(
-          "sticky top-4 hidden h-[calc(100vh-2rem)] shrink-0 flex-col justify-between overflow-hidden rounded-[26px] bg-gradient-to-b from-[#1e080b] via-[#160609] to-[#0d0305] py-4 text-white shadow-[0_14px_38px_rgba(28,8,11,0.34)] transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:flex",
+          "hidden h-full shrink-0 flex-col justify-between overflow-hidden rounded-[26px] bg-gradient-to-b from-[#1e080b] via-[#160609] to-[#0d0305] py-4 text-white shadow-[0_14px_38px_rgba(28,8,11,0.34)] transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:flex",
           expanded ? "w-[228px]" : "w-[106px]"
         )}
       >

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   X,
   PhoneCall,
@@ -129,18 +130,18 @@ export function DriverCommsDrawer({
     setChatText("");
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex h-dvh w-screen justify-end overflow-hidden">
       {/* Subtle Backdrop */}
       <div
         onClick={onClose}
         className="animate-overlay-fade fixed inset-0 bg-slate-950/35 backdrop-blur-[1.5px]"
       />
 
-      {/* Right Slide-Over Dispatch & Comms Bar */}
+      {/* Right Slide-Over Dispatch & Comms Bar — exact 100dvh viewport height */}
       <aside
         aria-label="Driver Communications & Vehicle Details Panel"
-        className="animate-drawer-in relative z-10 flex h-full w-full max-w-[440px] flex-col border-l border-border bg-card text-card-foreground shadow-2xl"
+        className="animate-drawer-in relative z-10 flex h-dvh max-h-dvh w-full max-w-[440px] flex-col overflow-hidden border-l border-border bg-card text-card-foreground shadow-2xl"
       >
         {/* Top Bar Header */}
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
@@ -254,13 +255,13 @@ export function DriverCommsDrawer({
           })}
         </div>
 
-        {/* SCROLLABLE BODY AREA */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-5">
-          {/* TAB 1: CAB CHAT */}
+        {/* SCROLLABLE BODY AREA (fits remaining exact screen height) */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {/* TAB 1: CAB CHAT — Pinned header/composer + scrollable middle messages */}
           {tab === "chat" && (
-            <div className="flex min-h-0 flex-1 flex-col justify-between gap-3">
+            <div className="flex min-h-0 flex-1 flex-col p-4">
               {/* Mini Driver + Vehicle Info Pill */}
-              <div className="rounded-xl border border-border/75 bg-muted/30 p-3 text-xs">
+              <div className="shrink-0 rounded-xl border border-border/75 bg-muted/30 p-3 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-foreground">
                     Cab Link · {activeDriver.phone}
@@ -270,13 +271,13 @@ export function DriverCommsDrawer({
                     Online
                   </span>
                 </div>
-                <p className="mt-1 text-[11px] text-muted-foreground">
+                <p className="mt-1 truncate text-[11px] text-muted-foreground">
                   {activeTruck.route.currentLocation}
                 </p>
               </div>
 
-              {/* Scrollable Messages Feed */}
-              <div className="flex-1 space-y-3 overflow-y-auto rounded-2xl border border-border/60 bg-muted/25 p-3.5">
+              {/* Independently Scrollable Messages Feed */}
+              <div className="my-3 min-h-0 flex-1 space-y-3 overflow-y-auto rounded-2xl border border-border/60 bg-muted/25 p-3.5">
                 {chatHistory.map((msg, i) => (
                   <div
                     key={i}
@@ -300,53 +301,54 @@ export function DriverCommsDrawer({
                 ))}
               </div>
 
-              {/* Quick Preset Dispatch Replies */}
-              <div>
-                <p className="mb-1.5 text-[10.5px] font-semibold text-muted-foreground">
-                  Quick Dispatch Presets
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    "Confirm A3 strap tension",
-                    "Proceed to Dock #3 gate",
-                    "Send updated ETA",
-                    "Schedule DPD regen at rest area",
-                  ].map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => handleSendChat(preset)}
-                      className="cursor-pointer rounded-full border border-border bg-muted/50 px-2.5 py-1 text-[11px] font-medium text-foreground transition-colors hover:border-red-500/50 hover:bg-red-500/10"
-                    >
-                      {preset}
-                    </button>
-                  ))}
+              {/* Pinned Bottom Quick Presets + Message Input */}
+              <div className="shrink-0 space-y-2.5">
+                <div>
+                  <p className="mb-1.5 text-[10.5px] font-semibold text-muted-foreground">
+                    Quick Dispatch Presets
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      "Confirm A3 strap tension",
+                      "Proceed to Dock #3 gate",
+                      "Send updated ETA",
+                      "Schedule DPD regen at rest area",
+                    ].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => handleSendChat(preset)}
+                        className="cursor-pointer rounded-full border border-border bg-muted/50 px-2.5 py-1 text-[11px] font-medium text-foreground transition-colors hover:border-red-500/50 hover:bg-red-500/10"
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* Composer */}
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSendChat();
-                }}
-                className="flex gap-2 border-t border-border pt-3"
-              >
-                <Input
-                  value={chatText}
-                  onChange={(e) => setChatText(e.target.value)}
-                  placeholder={`Message ${activeDriver.name}...`}
-                />
-                <Button type="submit" size="icon" className="h-9 w-9 shrink-0 rounded-xl">
-                  <Send className="h-4 w-4" />
-                </Button>
-              </form>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSendChat();
+                  }}
+                  className="flex gap-2 border-t border-border pt-3"
+                >
+                  <Input
+                    value={chatText}
+                    onChange={(e) => setChatText(e.target.value)}
+                    placeholder={`Message ${activeDriver.name}...`}
+                  />
+                  <Button type="submit" size="icon" className="h-9 w-9 shrink-0 rounded-xl">
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </form>
+              </div>
             </div>
           )}
 
-          {/* TAB 2: VOICE CALL */}
+          {/* TAB 2: VOICE CALL (Scrollable if short viewport) */}
           {tab === "call" && (
-            <div className="flex flex-1 flex-col justify-between gap-4">
+            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
               <div className="rounded-2xl border border-red-500/25 bg-gradient-to-b from-[#1e080b] to-[#110406] p-6 text-center text-white shadow-lg">
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-600/25 text-red-300 ring-4 ring-red-500/20">
                   <PhoneCall className={cn("h-7 w-7", callActive && "animate-pulse")} />
@@ -456,9 +458,9 @@ export function DriverCommsDrawer({
             </div>
           )}
 
-          {/* TAB 3: FULL DRIVER & VEHICLE DETAILS */}
+          {/* TAB 3: FULL DRIVER & VEHICLE DETAILS (Scrollable inside exact screen height) */}
           {tab === "details" && (
-            <div className="space-y-4">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
               {/* Driver Details Section */}
               <div className="rounded-2xl border border-border bg-muted/25 p-4">
                 <div className="flex items-center justify-between">
@@ -636,6 +638,7 @@ export function DriverCommsDrawer({
           )}
         </div>
       </aside>
-    </div>
+    </div>,
+    document.body
   );
 }
