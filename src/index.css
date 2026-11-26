@@ -236,9 +236,9 @@
 }
 
 .isuzu-marker-card.is-selected {
-  border: 2.2px solid #d91324;
-  background: #180609;
-  box-shadow: 0 0 0 4px rgba(217, 19, 36, 0.25), 0 10px 24px rgba(24, 6, 9, 0.4);
+  border: 2.2px solid #09090b;
+  background: #09090b;
+  box-shadow: 0 0 0 4px rgba(9, 9, 11, 0.22), 0 10px 24px rgba(9, 9, 11, 0.42);
 }
 
 .isuzu-marker-top {
@@ -263,7 +263,7 @@
 }
 
 .isuzu-marker-card.is-selected .isuzu-marker-speed {
-  color: #fecdd3;
+  color: #f4f4f5;
 }
 
 .isuzu-tnkb-plate {

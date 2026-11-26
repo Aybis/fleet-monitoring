@@ -32,6 +32,7 @@ import {
   type MapCameraCommand,
   type TileStyle,
 } from "@/components/map/IndonesiaLeafletMap";
+import { UNIT_ROUTE_PATHS, interpolateUnitRoute } from "@/data/indonesiaMap";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -81,6 +82,7 @@ export function LiveMapView() {
   const selectedObdHealth = getVehicleObdHealth(activeTruck, obdCatalog);
   const selectedLoadKg = getTruckLoadKg(activeTruck);
   const selectedLoadPct = getTruckLoadPct(activeTruck);
+  const activeRouteState = interpolateUnitRoute(activeTruck.id, activeTruck.route.progressPercent);
 
   const inTransitCount = trucks.filter((t) => t.status === "In Transit").length;
   const registeredObdCount = trucks.filter((t) => t.obd.registeredToIsuzu).length;
@@ -318,7 +320,7 @@ export function LiveMapView() {
               }
               aria-label="Center on active vehicle"
               title={`Center on ${activeTruck.plate}`}
-              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-red-500/60 bg-red-600 text-white shadow-md hover:bg-red-700"
+              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-zinc-900 bg-zinc-950 text-white shadow-md hover:bg-zinc-800 dark:border-white dark:bg-white dark:text-zinc-950"
             >
               <Crosshair className="h-4 w-4" />
             </button>
@@ -391,7 +393,7 @@ export function LiveMapView() {
             <div className="flex items-start justify-between gap-2">
               <div>
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="rounded-md bg-red-600 px-2 py-0.5 text-[10px] font-extrabold tracking-wider text-white">
+                  <span className="rounded-md bg-zinc-950 px-2 py-0.5 text-[10px] font-extrabold tracking-wider text-white dark:bg-white dark:text-zinc-950">
                     ISUZU {activeTruck.series}
                   </span>
                   <span className="text-sm font-extrabold text-foreground">{activeTruck.id}</span>
@@ -437,6 +439,94 @@ export function LiveMapView() {
                 alt={activeTruck.model}
                 className="max-h-full w-auto object-contain drop-shadow-md"
               />
+            </div>
+
+            {/* Multi-Stop Route Path Timeline (From -> To 1 -> To 2 -> To 3) */}
+            <div className="mt-3 rounded-xl border border-border/80 bg-card p-3 text-xs">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-foreground">
+                  Route Path ({activeRouteState.stops.length} Stops)
+                </span>
+                <span className="font-mono text-[10.5px] font-bold text-muted-foreground tabular-nums">
+                  {Math.round(activeTruck.route.progressPercent)}% · {activeRouteState.currentLegLabel}
+                </span>
+              </div>
+
+              <div className="mt-2.5 space-y-1.5">
+                {activeRouteState.stops.map((stop, idx) => {
+                  const isOrigin = idx === 0;
+                  const isFinal = idx === activeRouteState.stops.length - 1;
+                  const label = isOrigin ? "FROM" : isFinal ? "FINAL" : `TO ${idx}`;
+                  return (
+                    <button
+                      key={`${stop.code}-${idx}`}
+                      type="button"
+                      onClick={() =>
+                        setCameraCommand({
+                          id: Date.now(),
+                          type: "focus",
+                          lat: stop.lat,
+                          lng: stop.lng,
+                          zoom: 10,
+                        })
+                      }
+                      className={cn(
+                        "flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 text-left transition-colors hover:bg-muted/60",
+                        stop.status === "next"
+                          ? "border-zinc-950/40 bg-zinc-950/[0.04] dark:border-white/30 dark:bg-white/[0.06]"
+                          : "border-border/60 bg-background/60"
+                      )}
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span
+                          className={cn(
+                            "h-2.5 w-2.5 shrink-0 rounded-full",
+                            stop.status === "completed"
+                              ? "bg-emerald-500"
+                              : stop.status === "next"
+                              ? "bg-zinc-950 ring-2 ring-zinc-950/25 dark:bg-white dark:ring-white/30"
+                              : "border-2 border-blue-500 bg-card"
+                          )}
+                        />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono text-[9.5px] font-black text-muted-foreground">
+                              {label}
+                            </span>
+                            <span className="truncate text-[11px] font-bold text-foreground">
+                              {stop.city} ({stop.code})
+                            </span>
+                          </div>
+                          <p className="truncate text-[10px] text-muted-foreground">
+                            {stop.hubLabel}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="font-mono text-[10px] font-bold text-foreground tabular-nums">
+                          {stop.eta}
+                        </p>
+                        <p
+                          className={cn(
+                            "text-[9.5px] font-semibold",
+                            stop.status === "completed"
+                              ? "text-emerald-600 dark:text-emerald-400"
+                              : stop.status === "next"
+                              ? "text-foreground"
+                              : "text-muted-foreground"
+                          )}
+                        >
+                          {stop.status === "completed"
+                            ? "Passed"
+                            : stop.status === "next"
+                            ? "Next Stop"
+                            : "Upcoming"}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Live GPS Coordinates & Heading */}
@@ -644,8 +734,9 @@ export function LiveMapView() {
                           />
                         </div>
                         <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
-                          {t.route.originCode} → {t.route.destinationCode} · {t.route.speedMph} km/h
-                          · {t.obd.deviceId}
+                          {(UNIT_ROUTE_PATHS[t.id]?.map((s) => s.code).join(" → ")) ??
+                            `${t.route.originCode} → ${t.route.destinationCode}`}{" "}
+                          · {t.route.speedMph} km/h
                         </p>
                       </div>
                     </div>

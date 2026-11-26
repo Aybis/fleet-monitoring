@@ -7,7 +7,7 @@ import {
   INITIAL_SETTINGS,
   INITIAL_TRUCKS,
 } from "@/data/initialData";
-import { projectIndonesia } from "@/data/indonesiaMap";
+import { interpolateUnitRoute, projectIndonesia } from "@/data/indonesiaMap";
 import { getDtcInfo, OBD_CODE_LIST } from "@/data/obdDatabase";
 import { formatCurrentTime } from "@/lib/utils";
 import type {
@@ -123,6 +123,24 @@ interface PersistedState {
   emergencyAlerts: EmergencyAlert[];
 }
 
+function snapTrucksToIndonesiaRoutes(trucks: Truck[]): Truck[] {
+  return trucks.map((t) => {
+    const pos = interpolateUnitRoute(t.id, t.route.progressPercent);
+    const proj = projectIndonesia(pos.lat, pos.lng);
+    return {
+      ...t,
+      gps: {
+        ...t.gps,
+        lat: pos.lat,
+        lng: pos.lng,
+        headingDeg: pos.headingDeg,
+        mapX: proj.x,
+        mapY: proj.y,
+      },
+    };
+  });
+}
+
 function loadInitialState(): PersistedState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -137,7 +155,7 @@ function loadInitialState(): PersistedState {
         parsed.trucks[0].plateType
       ) {
         return {
-          trucks: parsed.trucks,
+          trucks: snapTrucksToIndonesiaRoutes(parsed.trucks),
           drivers: parsed.drivers ?? INITIAL_DRIVERS,
           queuedShipments: parsed.queuedShipments ?? INITIAL_QUEUED_SHIPMENTS,
           activities: parsed.activities ?? INITIAL_ACTIVITIES,
@@ -163,7 +181,7 @@ function loadInitialState(): PersistedState {
     // Fallback to defaults
   }
   return {
-    trucks: INITIAL_TRUCKS,
+    trucks: snapTrucksToIndonesiaRoutes(INITIAL_TRUCKS),
     drivers: INITIAL_DRIVERS,
     queuedShipments: INITIAL_QUEUED_SHIPMENTS,
     activities: INITIAL_ACTIVITIES,
@@ -1164,13 +1182,11 @@ export function HaulTrackProvider({ children }: { children: React.ReactNode }) {
           };
         }
 
-        // Smooth realistic GPS movement along heading inside Indonesia corridor
-        const rad = ((t.gps.headingDeg - 90) * Math.PI) / 180;
-        const dLat = -Math.sin(rad) * 0.012;
-        const dLng = Math.cos(rad) * 0.016;
-        const nextLat = Number(Math.max(-9.0, Math.min(4.8, t.gps.lat + dLat)).toFixed(4));
-        const nextLng = Number(Math.max(96.0, Math.min(140.0, t.gps.lng + dLng)).toFixed(4));
-        const proj = projectIndonesia(nextLat, nextLng);
+        // Strictly advance truck along its exact Indonesian multi-stop route path (ZERO ocean drift!)
+        const nextProgress =
+          t.route.progressPercent >= 96 ? 8 : Number((t.route.progressPercent + 0.65).toFixed(2));
+        const routed = interpolateUnitRoute(t.id, nextProgress);
+        const proj = projectIndonesia(routed.lat, routed.lng);
 
         return {
           ...t,
@@ -1178,13 +1194,14 @@ export function HaulTrackProvider({ children }: { children: React.ReactNode }) {
           tempCelsius: nextBayTemp,
           route: {
             ...t.route,
-            progressPercent: t.route.progressPercent >= 98 ? 15 : t.route.progressPercent + (Math.random() > 0.78 ? 1 : 0),
+            progressPercent: nextProgress,
             speedMph: nextSpeed,
           },
           gps: {
             ...t.gps,
-            lat: nextLat,
-            lng: nextLng,
+            lat: routed.lat,
+            lng: routed.lng,
+            headingDeg: routed.headingDeg,
             mapX: proj.x,
             mapY: proj.y,
             lastPing: "Just now",

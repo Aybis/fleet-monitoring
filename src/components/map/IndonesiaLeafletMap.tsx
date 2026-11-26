@@ -2,7 +2,11 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { CITY_HUBS } from "@/data/initialData";
-import { INDONESIA_CORRIDORS } from "@/data/indonesiaMap";
+import {
+  INDONESIA_MAX_BOUNDS,
+  UNIT_ROUTE_PATHS,
+  interpolateUnitRoute,
+} from "@/data/indonesiaMap";
 import { getVehicleObdHealth } from "@/context/HaulTrackContext";
 import type { ObdDtcDefinition, Truck } from "@/types/haultrack";
 
@@ -112,8 +116,10 @@ export function IndonesiaLeafletMap({
     const map = L.map(containerRef.current, {
       center: [-2.4, 114.8],
       zoom: 5,
-      minZoom: 4,
+      minZoom: 5,
       maxZoom: 18,
+      maxBounds: INDONESIA_MAX_BOUNDS,
+      maxBoundsViscosity: 1.0,
       zoomControl: false,
       attributionControl: true,
     });
@@ -164,54 +170,114 @@ export function IndonesiaLeafletMap({
     tileLayerRef.current = layer;
   }, [tileStyle]);
 
-  // Render Corridors & Active Route Polylines
+  // Render All Units' Multi-Stop Route Paths + Highlight Active Unit (From -> To 1 -> To 2 -> To 3)
   useEffect(() => {
     const group = corridorsLayerRef.current;
     if (!group) return;
     group.clearLayers();
     if (!showRoutes) return;
 
-    for (const cor of INDONESIA_CORRIDORS) {
-      L.polyline(cor.points, {
-        color: cor.type === "toll" ? "#d91324" : "#0284c7",
-        weight: cor.type === "toll" ? 2.5 : 1.8,
-        opacity: cor.type === "toll" ? 0.55 : 0.48,
-        dashArray: cor.type === "sea" ? "6 6" : undefined,
+    // 1. Draw every visible unit's multi-stop route path subtly so all destinations are visible
+    for (const truck of trucks) {
+      if (truck.id === activeTruck.id) continue;
+      const unitStops = UNIT_ROUTE_PATHS[truck.id];
+      if (!unitStops || unitStops.length < 2) continue;
+
+      const chainLabel = unitStops.map((s) => s.code).join(" → ");
+      L.polyline(
+        unitStops.map((s) => [s.lat, s.lng] as [number, number]),
+        {
+          color: "#52525b",
+          weight: 2.2,
+          opacity: 0.42,
+          dashArray: "5 6",
+        }
+      )
+        .bindTooltip(`${truck.id} (${truck.plate}): ${chainLabel}`, { sticky: true })
+        .addTo(group);
+
+      // Subtle endpoint dots for non-active units
+      unitStops.forEach((s, idx) => {
+        L.circleMarker([s.lat, s.lng], {
+          radius: idx === 0 || idx === unitStops.length - 1 ? 3.5 : 2.5,
+          color: "#ffffff",
+          weight: 1,
+          fillColor: "#52525b",
+          fillOpacity: 0.75,
+        })
+          .bindTooltip(`${truck.id} · ${idx === 0 ? "From" : idx === unitStops.length - 1 ? "Final" : `Stop ${idx}`}: ${s.city}`, {
+            direction: "top",
+          })
+          .addTo(group);
+      });
+    }
+
+    // 2. Draw Active Selected Unit's Full Multi-Stop Route (Completed solid + Remaining dashed + Numbered Stop Pins)
+    const activeRoute = interpolateUnitRoute(activeTruck.id, activeTruck.route.progressPercent);
+
+    if (activeRoute.completedPath.length >= 2) {
+      L.polyline(activeRoute.completedPath, {
+        color: "#09090b",
+        weight: 4.5,
+        opacity: 0.92,
       })
-        .bindTooltip(cor.label, { sticky: true })
+        .bindTooltip(`${activeTruck.id} Completed Route (${Math.round(activeTruck.route.progressPercent)}%)`, {
+          sticky: true,
+        })
         .addTo(group);
     }
 
-    // Highlight active truck's origin -> current GPS -> destination
-    const orig = CITY_HUBS.find((h) => h.code === activeTruck.route.originCode);
-    const dest = CITY_HUBS.find((h) => h.code === activeTruck.route.destinationCode);
-    if (orig && dest) {
-      L.polyline(
-        [
-          [orig.lat, orig.lng],
-          [activeTruck.gps.lat, activeTruck.gps.lng],
-        ],
-        {
-          color: "#d91324",
-          weight: 4,
-          opacity: 0.9,
-        }
-      ).addTo(group);
-
-      L.polyline(
-        [
-          [activeTruck.gps.lat, activeTruck.gps.lng],
-          [dest.lat, dest.lng],
-        ],
-        {
-          color: "#d91324",
-          weight: 3,
-          opacity: 0.75,
-          dashArray: "7 6",
-        }
-      ).addTo(group);
+    if (activeRoute.remainingPath.length >= 2) {
+      L.polyline(activeRoute.remainingPath, {
+        color: "#2563eb",
+        weight: 3.5,
+        opacity: 0.88,
+        dashArray: "8 6",
+      })
+        .bindTooltip(`${activeTruck.id} Remaining Route: ${activeRoute.stops.map((s) => s.code).join(" → ")}`, {
+          sticky: true,
+        })
+        .addTo(group);
     }
-  }, [showRoutes, activeTruck]);
+
+    // Numbered Stop Markers (FROM -> 1 -> 2 -> 3 -> END)
+    activeRoute.stops.forEach((stop, idx) => {
+      const isOrigin = idx === 0;
+      const isFinal = idx === activeRoute.stops.length - 1;
+      const badgeLabel = isOrigin ? "FROM" : isFinal ? "END" : `TO ${idx}`;
+      const statusColor =
+        stop.status === "completed"
+          ? "#10b981"
+          : stop.status === "next"
+          ? "#09090b"
+          : "#2563eb";
+
+      const stopIcon = L.divIcon({
+        className: "horus-stop-divicon",
+        html: `
+          <div style="transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;pointer-events:auto;">
+            <span style="background:${statusColor};color:#ffffff;font-family:Plus Jakarta Sans,Inter,sans-serif;font-size:9px;font-weight:900;padding:2px 6px;border-radius:999px;border:1.5px solid #ffffff;box-shadow:0 3px 8px rgba(0,0,0,0.28);white-space:nowrap;letter-spacing:0.04em;">
+              ${badgeLabel} · ${stop.code}
+            </span>
+          </div>
+        `,
+        iconSize: [0, 0],
+        iconAnchor: [0, 0],
+      });
+
+      L.marker([stop.lat, stop.lng], {
+        icon: stopIcon,
+        zIndexOffset: 500,
+      })
+        .bindTooltip(
+          `<strong>${badgeLabel}: ${stop.city}</strong><br/>${stop.hubLabel}<br/>ETA: ${stop.eta} (${
+            stop.status === "completed" ? "Passed" : stop.status === "next" ? "Next Stop" : "Upcoming"
+          })`,
+          { direction: "top", offset: [0, -10] }
+        )
+        .addTo(group);
+    });
+  }, [showRoutes, trucks, activeTruck]);
 
   // Render Indonesian Hub Geofences
   useEffect(() => {

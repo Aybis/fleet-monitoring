@@ -399,3 +399,147 @@ export function pointsToSvgPath(points: Array<[number, number]>): string {
     })
     .join(" ");
 }
+
+// Strict Indonesia Geographic Bounds (Sabang -> Merauke, Miangas -> Rote)
+export const INDONESIA_MAX_BOUNDS: [[number, number], [number, number]] = [
+  [-11.5, 94.6],
+  [6.4, 141.4],
+];
+
+export interface UnitRouteStop {
+  code: string;
+  city: string;
+  hubLabel: string;
+  lat: number;
+  lng: number;
+  eta: string;
+}
+
+// Multi-Stop Indonesian Route Paths (From -> To 1 -> To 2 -> To 3 -> Final) per Registered Unit
+export const UNIT_ROUTE_PATHS: Record<string, UnitRouteStop[]> = {
+  "ISZ-204": [
+    { code: "JKT", city: "Jakarta", hubLabel: "Karawang / Cikampek Hub", lat: -6.2088, lng: 106.8456, eta: "06:30 WIB" },
+    { code: "CBN", city: "Cirebon", hubLabel: "Tol Cipali · Cirebon Drop", lat: -6.732, lng: 108.5523, eta: "10:15 WIB" },
+    { code: "SMG", city: "Semarang", hubLabel: "Semarang Kaliwungu Hub", lat: -6.9667, lng: 110.4167, eta: "14:20 WIB" },
+    { code: "SBY", city: "Surabaya", hubLabel: "Tanjung Perak Terminal", lat: -7.2575, lng: 112.7521, eta: "18:45 WIB" },
+  ],
+  "ISZ-118": [
+    { code: "SBY", city: "Surabaya", hubLabel: "Tanjung Perak Dock #1", lat: -7.2575, lng: 112.7521, eta: "08:00 WIB" },
+    { code: "TBN", city: "Tuban", hubLabel: "Pantura Tuban Checkpoint", lat: -6.8976, lng: 112.0649, eta: "10:30 WIB" },
+    { code: "SMG", city: "Semarang", hubLabel: "Semarang Logistics Park", lat: -6.9667, lng: 110.4167, eta: "13:45 WIB" },
+    { code: "TGL", city: "Tegal", hubLabel: "Tegal Cold-Chain Drop", lat: -6.8694, lng: 109.1402, eta: "16:10 WIB" },
+    { code: "JKT", city: "Jakarta", hubLabel: "Tanjung Priok Hub", lat: -6.2088, lng: 106.8456, eta: "20:00 WIB" },
+  ],
+  "ISZ-309": [
+    { code: "JKT", city: "Jakarta", hubLabel: "Cikarang Consolidation", lat: -6.2088, lng: 106.8456, eta: "06:40 WIB" },
+    { code: "KRW", city: "Karawang", hubLabel: "KIIC Industrial Drop #1", lat: -6.3227, lng: 107.3376, eta: "08:05 WIB" },
+    { code: "PWK", city: "Purwakarta", hubLabel: "Tol Cipularang KM 88", lat: -6.5569, lng: 107.4433, eta: "09:15 WIB" },
+    { code: "BDG", city: "Bandung", hubLabel: "Gedebage Freight Hub", lat: -6.9175, lng: 107.6191, eta: "11:00 WIB" },
+  ],
+  "ISZ-412": [
+    { code: "MDN", city: "Medan", hubLabel: "Belawan Sumatra Hub", lat: 3.5952, lng: 98.6722, eta: "05:30 WIB" },
+    { code: "RPR", city: "Rantau Prapat", hubLabel: "Labuhanbatu Drop #1", lat: 2.1, lng: 99.83, eta: "10:40 WIB" },
+    { code: "PKU", city: "Pekanbaru", hubLabel: "Riau Distribution Hub", lat: 0.5071, lng: 101.4478, eta: "15:20 WIB" },
+    { code: "JMB", city: "Jambi", hubLabel: "Jambi Transit Depot", lat: -1.6101, lng: 103.6131, eta: "20:10 WIB" },
+    { code: "PLB", city: "Palembang", hubLabel: "Boom Baru Terminal", lat: -2.9761, lng: 104.7754, eta: "01:30 WIB" },
+  ],
+  "ISZ-501": [
+    { code: "BPN", city: "Balikpapan", hubLabel: "Kariangau Port Hub", lat: -1.2379, lng: 116.8529, eta: "07:00 WITA" },
+    { code: "IKN", city: "Sepaku / IKN", hubLabel: "IKN Nusantara Supply Drop", lat: -0.973, lng: 116.709, eta: "09:10 WITA" },
+    { code: "TGR", city: "Tenggarong", hubLabel: "Kutai Kartanegara Drop", lat: -0.4402, lng: 116.9896, eta: "11:30 WITA" },
+    { code: "SMD", city: "Samarinda", hubLabel: "Palaran Freight Hub", lat: -0.5022, lng: 117.1536, eta: "13:00 WITA" },
+  ],
+  "ISZ-615": [
+    { code: "MKS", city: "Makassar", hubLabel: "Soekarno-Hatta Port Hub", lat: -5.1477, lng: 119.4327, eta: "06:15 WITA" },
+    { code: "MRS", city: "Maros", hubLabel: "Maros Industrial Drop #1", lat: -4.996, lng: 119.572, eta: "07:30 WITA" },
+    { code: "BRU", city: "Barru", hubLabel: "Barru Coastal Checkpoint", lat: -4.407, lng: 119.622, eta: "09:45 WITA" },
+    { code: "PRE", city: "Parepare", hubLabel: "Parepare Logistics Hub", lat: -4.0167, lng: 119.6236, eta: "11:20 WITA" },
+    { code: "PLP", city: "Palopo", hubLabel: "Palopo North Sulsel Drop", lat: -2.9925, lng: 120.1969, eta: "15:10 WITA" },
+  ],
+  "ISZ-722": [
+    { code: "SBY", city: "Surabaya", hubLabel: "Rungkut Industrial Hub", lat: -7.2575, lng: 112.7521, eta: "06:00 WIB" },
+    { code: "PBL", city: "Probolinggo", hubLabel: "Tol Paspro Drop #1", lat: -7.7543, lng: 113.2159, eta: "08:30 WIB" },
+    { code: "BWI", city: "Banyuwangi", hubLabel: "Ketapang Ro-Ro Ferry", lat: -8.1445, lng: 114.3974, eta: "12:15 WIB" },
+    { code: "GLM", city: "Gilimanuk", hubLabel: "Bali West Gate Check", lat: -8.1636, lng: 114.439, eta: "14:00 WITA" },
+    { code: "DPS", city: "Denpasar", hubLabel: "Benoa Distribution Hub", lat: -8.6705, lng: 115.2126, eta: "17:15 WITA" },
+  ],
+};
+
+export interface InterpolatedRouteState {
+  lat: number;
+  lng: number;
+  headingDeg: number;
+  completedPath: Array<[number, number]>;
+  remainingPath: Array<[number, number]>;
+  stops: Array<UnitRouteStop & { status: "completed" | "next" | "upcoming"; stopIndex: number }>;
+  currentLegLabel: string;
+}
+
+export function interpolateUnitRoute(
+  truckId: string,
+  progressPercent: number
+): InterpolatedRouteState {
+  const stops = UNIT_ROUTE_PATHS[truckId] ?? UNIT_ROUTE_PATHS["ISZ-204"];
+  const clamped = Math.max(0, Math.min(100, progressPercent)) / 100;
+
+  const segLengths: number[] = [];
+  let totalLen = 0;
+  for (let i = 0; i < stops.length - 1; i++) {
+    const dLat = stops[i + 1].lat - stops[i].lat;
+    const dLng = stops[i + 1].lng - stops[i].lng;
+    const len = Math.hypot(dLat, dLng);
+    segLengths.push(len);
+    totalLen += len;
+  }
+
+  const targetDist = clamped * totalLen;
+  let acc = 0;
+  let segIdx = 0;
+  let segT = 0;
+
+  for (let i = 0; i < segLengths.length; i++) {
+    if (acc + segLengths[i] >= targetDist || i === segLengths.length - 1) {
+      segIdx = i;
+      segT = segLengths[i] > 0 ? Math.min(1, Math.max(0, (targetDist - acc) / segLengths[i])) : 0;
+      break;
+    }
+    acc += segLengths[i];
+  }
+
+  const a = stops[segIdx];
+  const b = stops[segIdx + 1] ?? a;
+  const lat = Number((a.lat + (b.lat - a.lat) * segT).toFixed(4));
+  const lng = Number((a.lng + (b.lng - a.lng) * segT).toFixed(4));
+
+  const dLat = b.lat - a.lat;
+  const dLng = b.lng - a.lng;
+  const headingDeg = Math.round(((Math.atan2(dLng, dLat) * 180) / Math.PI + 360) % 360);
+
+  const completedPath: Array<[number, number]> = [
+    ...stops.slice(0, segIdx + 1).map((s): [number, number] => [s.lat, s.lng]),
+    [lat, lng],
+  ];
+  const remainingPath: Array<[number, number]> = [
+    [lat, lng],
+    ...stops.slice(segIdx + 1).map((s): [number, number] => [s.lat, s.lng]),
+  ];
+
+  const stopsWithStatus = stops.map((s, idx) => ({
+    ...s,
+    stopIndex: idx,
+    status: (idx <= segIdx ? "completed" : idx === segIdx + 1 ? "next" : "upcoming") as
+      | "completed"
+      | "next"
+      | "upcoming",
+  }));
+
+  return {
+    lat,
+    lng,
+    headingDeg,
+    completedPath,
+    remainingPath,
+    stops: stopsWithStatus,
+    currentLegLabel: `${a.city} → ${b.city}`,
+  };
+}
