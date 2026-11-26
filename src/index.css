@@ -30,48 +30,48 @@
 }
 
 :root {
-  --background: #f4f7fb;
-  --foreground: #0f172a;
+  --background: #f6f6f7;
+  --foreground: #09090b;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #09090b;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #d91324;
+  --popover-foreground: #09090b;
+  --primary: #09090b;
   --primary-foreground: #ffffff;
-  --secondary: #eef2f7;
-  --secondary-foreground: #1e293b;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #fef2f2;
-  --accent-foreground: #b91c1c;
+  --secondary: #f1f1f3;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #f4f4f5;
+  --accent-foreground: #09090b;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --border: #e5eaf1;
-  --input: #e2e8f0;
-  --ring: #d91324;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #18181b;
   --radius: 0.875rem;
 }
 
 .dark {
-  --background: #091114;
-  --foreground: #f1f5f9;
-  --card: #111b20;
-  --card-foreground: #f1f5f9;
-  --popover: #111b20;
-  --popover-foreground: #f1f5f9;
-  --primary: #ef233c;
-  --primary-foreground: #ffffff;
-  --secondary: #18262d;
-  --secondary-foreground: #e2e8f0;
-  --muted: #162228;
-  --muted-foreground: #94a3b8;
-  --accent: #360d12;
-  --accent-foreground: #fda4af;
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #121215;
+  --card-foreground: #fafafa;
+  --popover: #121215;
+  --popover-foreground: #fafafa;
+  --primary: #fafafa;
+  --primary-foreground: #09090b;
+  --secondary: #1c1c21;
+  --secondary-foreground: #e4e4e7;
+  --muted: #18181b;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
+  --accent-foreground: #fafafa;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #1e2f37;
-  --input: #1e2f37;
-  --ring: #ef233c;
+  --border: #27272a;
+  --input: #27272a;
+  --ring: #d4d4d8;
 }
 
 @layer base {
@@ -79,23 +79,21 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-sans antialiased selection:bg-red-500/20 selection:text-red-900 dark:selection:text-red-200;
+    @apply bg-background text-foreground font-sans antialiased selection:bg-zinc-900/15 selection:text-zinc-950 dark:selection:bg-white/20 dark:selection:text-white;
   }
 }
 
-/* Soft atmospheric light-sky backdrop like the reference UI */
+/* Crisp monochrome black & white canvas so semantic icons & red alerts stand out immediately */
 .haultrack-canvas {
-  background-color: #f4f7fb;
+  background-color: #f6f6f7;
   background-image:
-    radial-gradient(ellipse 70% 50% at 68% 22%, rgba(212, 229, 248, 0.55) 0%, rgba(244, 247, 251, 0) 70%),
-    radial-gradient(ellipse 50% 40% at 25% 8%, rgba(254, 226, 226, 0.32) 0%, rgba(244, 247, 251, 0) 65%);
+    radial-gradient(ellipse 70% 50% at 68% 18%, rgba(228, 228, 231, 0.5) 0%, rgba(246, 246, 247, 0) 70%);
 }
 
 .dark .haultrack-canvas {
-  background-color: #091114;
+  background-color: #09090b;
   background-image:
-    radial-gradient(ellipse 65% 45% at 65% 20%, rgba(153, 27, 27, 0.22) 0%, rgba(9, 17, 20, 0) 70%),
-    radial-gradient(ellipse 45% 35% at 20% 10%, rgba(15, 52, 68, 0.2) 0%, rgba(9, 17, 20, 0) 65%);
+    radial-gradient(ellipse 65% 45% at 65% 18%, rgba(39, 39, 42, 0.35) 0%, rgba(9, 9, 11, 0) 70%);
 }
 
 /* Smooth page & modal transitions */

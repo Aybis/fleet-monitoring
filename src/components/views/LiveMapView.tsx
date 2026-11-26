@@ -121,7 +121,7 @@ export function LiveMapView() {
             <h1 className="text-[28px] font-extrabold leading-tight tracking-tight text-foreground">
               HORUS — Indonesia Live OBD Map
             </h1>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-600/10 px-3 py-1 text-[11px] font-extrabold text-red-700 dark:text-red-300">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-600/10 px-3 py-1 text-[11px] font-extrabold text-emerald-700 dark:text-emerald-300">
               <ShieldCheck className="h-3.5 w-3.5" />
               <TermTooltip termKey="OBD" showIcon={false}>
                 {registeredObdCount}/{trucks.length} Registered Isuzu OBD-II Online
@@ -184,8 +184,8 @@ export function LiveMapView() {
               className={cn(
                 "cursor-pointer rounded-xl border px-3 py-1.5 text-xs font-bold transition-all",
                 seriesFilter === series
-                  ? "border-red-600 bg-red-600 text-white shadow-sm"
-                  : "border-border bg-card text-muted-foreground hover:border-red-500/40 hover:text-foreground"
+                  ? "border-zinc-950 bg-zinc-950 text-white shadow-sm dark:border-white dark:bg-white dark:text-zinc-950"
+                  : "border-border bg-card text-muted-foreground hover:border-zinc-400 hover:text-foreground"
               )}
             >
               {series === "ALL" ? `All Isuzu (${trucks.length})` : `Isuzu ${series}`}
@@ -217,8 +217,8 @@ export function LiveMapView() {
               {label}
             </button>
           ))}
-          <span className="ml-1 inline-flex items-center gap-1.5 rounded-full bg-red-500/12 px-3 py-1 text-[11px] font-semibold text-red-700 dark:text-red-300">
-            <span className="h-2 w-2 rounded-full bg-red-600" />
+          <span className="ml-1 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/12 px-3 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
             {inTransitCount} Moving
           </span>
         </div>
@@ -250,7 +250,7 @@ export function LiveMapView() {
                 className={cn(
                   "cursor-pointer rounded-xl border px-2.5 py-1.5 text-[11px] font-semibold shadow-md backdrop-blur-md transition-all",
                   layer.active
-                    ? "border-red-500/80 bg-red-600 text-white"
+                    ? "border-zinc-950 bg-zinc-950 text-white dark:border-white dark:bg-white dark:text-zinc-950"
                     : "border-border/80 bg-card/95 text-foreground hover:bg-muted"
                 )}
               >
@@ -624,7 +624,7 @@ export function LiveMapView() {
                     className={cn(
                       "flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border px-2.5 py-2 text-left text-xs transition-all",
                       selected
-                        ? "border-red-600 bg-red-500/[0.06]"
+                        ? "border-zinc-950 bg-zinc-950/[0.04] ring-1 ring-zinc-950/15 dark:border-white dark:bg-white/[0.06]"
                         : "border-border/70 hover:bg-muted/50"
                     )}
                   >

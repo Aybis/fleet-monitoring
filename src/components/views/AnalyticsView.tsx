@@ -55,6 +55,7 @@ import { Button } from "@/components/ui/button";
 import { LicensePlateBadge } from "@/components/ui/LicensePlateBadge";
 import { TermTooltip } from "@/components/ui/TermTooltip";
 import { TablePagination } from "@/components/ui/TablePagination";
+import { FleetCostSankey } from "@/components/analytics/FleetCostSankey";
 import type { IsuzuSeries } from "@/types/haultrack";
 import { cn, formatTons } from "@/lib/utils";
 
@@ -224,9 +225,16 @@ export function AnalyticsView() {
     const liveCapKg = filteredTrucks.reduce((s, t) => s + t.maxCapacityKg, 0);
     const liveLoadPct = liveCapKg > 0 ? Math.round((livePayloadKg / liveCapKg) * 100) : 0;
 
-    const totalCostM = costTrendData.reduce(
-      (s, pt) => s + pt.fuelM + pt.maintenanceM + pt.tollFerryM + pt.driverOpsM,
-      0
+    const totalFuelM = costTrendData.reduce((s, pt) => s + pt.fuelM, 0);
+    const totalMaintenanceM = costTrendData.reduce((s, pt) => s + pt.maintenanceM, 0);
+    const totalTollFerryM = costTrendData.reduce((s, pt) => s + pt.tollFerryM, 0);
+    const totalDriverOpsM = costTrendData.reduce((s, pt) => s + pt.driverOpsM, 0);
+    const totalCostM = totalFuelM + totalMaintenanceM + totalTollFerryM + totalDriverOpsM;
+    const avgMarginPct = Number(
+      (
+        filteredBranches.reduce((s, b) => s + b.revenueMarginPct, 0) /
+        Math.max(1, filteredBranches.length)
+      ).toFixed(1)
     );
 
     const preventableExposureM = Number((criticalUnits * 18.5 + warningUnits * 6.2).toFixed(1));
@@ -253,11 +261,16 @@ export function AnalyticsView() {
       avgOtif,
       avgBackhaul,
       avgFuelKmL,
+      avgMarginPct,
       livePayloadKg,
       liveLoadPct,
       activeDtcCount,
       criticalUnits,
       warningUnits,
+      totalFuelM: Number(totalFuelM.toFixed(1)),
+      totalMaintenanceM: Number(totalMaintenanceM.toFixed(1)),
+      totalTollFerryM: Number(totalTollFerryM.toFixed(1)),
+      totalDriverOpsM: Number(totalDriverOpsM.toFixed(1)),
       totalCostM: Number(totalCostM.toFixed(1)),
       preventableExposureM,
       liveAvgSpeed,
@@ -341,7 +354,7 @@ export function AnalyticsView() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#d91324] px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white">
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-950 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white dark:bg-white dark:text-zinc-950">
               <Building2 className="h-3 w-3" />
               Head Office (HO) View
             </span>
@@ -376,7 +389,7 @@ export function AnalyticsView() {
                 className={cn(
                   "cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition-all",
                   timeframe === key
-                    ? "bg-red-600 text-white shadow-sm"
+                    ? "bg-zinc-950 text-white shadow-sm dark:bg-white dark:text-zinc-950"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -427,7 +440,7 @@ export function AnalyticsView() {
               className={cn(
                 "cursor-pointer rounded-lg border px-2.5 py-1 text-xs font-semibold transition-all",
                 seriesFilter === ser
-                  ? "border-red-600 bg-red-600/12 text-red-700 dark:text-red-300"
+                  ? "border-zinc-950 bg-zinc-950 text-white dark:border-white dark:bg-white dark:text-zinc-950"
                   : "border-border bg-background text-muted-foreground hover:text-foreground"
               )}
             >
@@ -437,23 +450,23 @@ export function AnalyticsView() {
         </div>
       </div>
 
-      {/* Live Real-Time Telematics Heartbeat Strip */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-red-500/20 bg-gradient-to-r from-red-500/[0.06] via-card to-card px-4 py-2.5 text-xs">
+      {/* Live Real-Time Telematics Heartbeat Strip (Monochrome + Emerald Live Dot) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-2.5 text-xs shadow-xs">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="inline-flex items-center gap-2 font-extrabold text-red-700 dark:text-red-300">
+          <span className="inline-flex items-center gap-2 font-extrabold text-foreground">
             <span className="relative flex h-2 w-2">
               {settings.liveTelemetryUpdates && (
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
               )}
               <span
                 className={cn(
                   "relative inline-flex h-2 w-2 rounded-full",
-                  settings.liveTelemetryUpdates ? "bg-red-600" : "bg-slate-400"
+                  settings.liveTelemetryUpdates ? "bg-emerald-500" : "bg-zinc-400"
                 )}
               />
             </span>
             {settings.liveTelemetryUpdates
-              ? "REAL-TIME CAN-BUS & GPS STREAM"
+              ? "LIVE GEOTAB & FABRIC TELEMETRY"
               : "TELEMETRY STREAM PAUSED"}
           </span>
           <span className="text-muted-foreground tabular-nums">
@@ -486,7 +499,7 @@ export function AnalyticsView() {
         <Card className="p-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <TermTooltip termKey="CPK">Cost per KM (CPK)</TermTooltip>
-            <Wallet className="h-4 w-4 text-red-600" />
+            <Wallet className="h-4 w-4 text-zinc-700 dark:text-zinc-300" />
           </div>
           <p className="mt-2 text-2xl font-extrabold tabular-nums">
             {formatIdr(hoKpis.avgCpk)}
@@ -521,7 +534,7 @@ export function AnalyticsView() {
         <Card className="p-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Diesel Fuel Economy</span>
-            <Fuel className="h-4 w-4 text-red-600" />
+            <Fuel className="h-4 w-4 text-zinc-700 dark:text-zinc-300" />
           </div>
           <p className="mt-2 text-2xl font-extrabold tabular-nums">{hoKpis.avgFuelKmL} km/L</p>
           <p className="mt-1 text-[11px] text-amber-600 dark:text-amber-400">
@@ -535,14 +548,14 @@ export function AnalyticsView() {
         <Card
           className={cn(
             "p-4",
-            hoKpis.criticalUnits > 0 && "border-amber-500/60 bg-amber-500/[0.04]"
+            hoKpis.criticalUnits > 0 && "border-red-500/45 bg-red-500/[0.04]"
           )}
         >
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <TermTooltip termKey="DTC">OBD Downtime Risk</TermTooltip>
-            <ShieldAlert className="h-4 w-4 text-amber-500" />
+            <ShieldAlert className="h-4 w-4 text-red-600" />
           </div>
-          <p className="mt-2 text-2xl font-extrabold tabular-nums">
+          <p className="mt-2 text-2xl font-extrabold text-red-600 tabular-nums dark:text-red-400">
             Rp {hoKpis.preventableExposureM} Jt
           </p>
           <p className="mt-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
@@ -571,7 +584,7 @@ export function AnalyticsView() {
               className={cn(
                 "inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all",
                 active
-                  ? "bg-red-600 text-white shadow-sm"
+                  ? "bg-zinc-950 text-white shadow-sm dark:bg-white dark:text-zinc-950"
                   : "bg-card text-muted-foreground border border-border hover:text-foreground"
               )}
             >
@@ -582,9 +595,47 @@ export function AnalyticsView() {
         })}
       </div>
 
-      {/* TAB 1: COST, MARGIN & THROUGHPUT */}
+      {/* TAB 1: MANAGEMENT P&L, SANKEY COST FLOW & THROUGHPUT */}
       {tab === "overview" && (
         <div className="animate-page-enter space-y-5">
+          {/* Management Revenue -> Operating Cost -> Controllable Leakage Sankey Card */}
+          <Card className="p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-md bg-zinc-950 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-white dark:bg-white dark:text-zinc-950">
+                    Management P&amp;L Flow
+                  </span>
+                  <h3 className="text-base font-extrabold text-foreground">
+                    Fleet Cost &amp; Leakage Sankey Diagram (Rp Juta)
+                  </h3>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Visualizes how gross freight revenue splits into direct operating costs, net
+                  EBITDA margin, and controllable cost leakages (idle fuel, empty backhaul, and
+                  unplanned OBD repairs).
+                </p>
+              </div>
+              <Badge variant="outline">
+                {timeframe.toUpperCase()} · {REGION_LABELS[region]}
+              </Badge>
+            </div>
+
+            <FleetCostSankey
+              fuelM={hoKpis.totalFuelM}
+              tollFerryM={hoKpis.totalTollFerryM}
+              driverOpsM={hoKpis.totalDriverOpsM}
+              maintenanceM={hoKpis.totalMaintenanceM}
+              avgMarginPct={hoKpis.avgMarginPct}
+              idleWasteShare={0.168}
+              emptyBackhaulShare={hoKpis.avgBackhaul / 100}
+              unplannedObdExposureM={hoKpis.preventableExposureM}
+              timeframeLabel={timeframe.toUpperCase()}
+              regionLabel={REGION_LABELS[region]}
+              onDrillDown={(nextTab) => setTab(nextTab)}
+            />
+          </Card>
+
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
             {/* Operating Cost Breakdown vs Budget */}
             <Card className="p-5 xl:col-span-2">
@@ -599,7 +650,7 @@ export function AnalyticsView() {
                     <strong className="text-foreground">Rp {hoKpis.totalCostM} Jt</strong>
                   </p>
                 </div>
-                <Badge variant="express">Within Budget (-2.1%)</Badge>
+                <Badge variant="secondary">Within Budget (-2.1%)</Badge>
               </div>
               <div className="h-[290px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -608,8 +659,8 @@ export function AnalyticsView() {
                     margin={{ top: 10, right: 12, left: -8, bottom: 0 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.2)" />
-                    <XAxis dataKey="period" tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                    <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                    <XAxis dataKey="period" tick={{ fontSize: 12 }} stroke="#71717a" />
+                    <YAxis tick={{ fontSize: 12 }} stroke="#71717a" />
                     <Tooltip
                       contentStyle={{
                         borderRadius: "12px",
@@ -620,9 +671,9 @@ export function AnalyticsView() {
                       }}
                     />
                     <Legend wrapperStyle={{ fontSize: "11px" }} />
-                    <Bar dataKey="fuelM" name="Fuel (Rp Jt)" stackId="cost" fill="#d91324" />
+                    <Bar dataKey="fuelM" name="Fuel (Rp Jt)" stackId="cost" fill="#18181b" />
                     <Bar dataKey="tollFerryM" name="Tol & Ro-Ro" stackId="cost" fill="#0284c7" />
-                    <Bar dataKey="driverOpsM" name="Driver Ops" stackId="cost" fill="#64748b" />
+                    <Bar dataKey="driverOpsM" name="Driver Ops" stackId="cost" fill="#71717a" />
                     <Bar
                       dataKey="maintenanceM"
                       name="Maintenance"
@@ -634,8 +685,8 @@ export function AnalyticsView() {
                       type="monotone"
                       dataKey="budgetM"
                       name="HO Budget Cap"
-                      stroke="#0f172a"
-                      strokeWidth={2.2}
+                      stroke="#10b981"
+                      strokeWidth={2.4}
                       strokeDasharray="5 4"
                       dot={{ r: 3 }}
                     />
@@ -745,8 +796,8 @@ export function AnalyticsView() {
                   >
                     <defs>
                       <linearGradient id="hoTonGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#d91324" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#d91324" stopOpacity={0.02} />
+                        <stop offset="5%" stopColor="#18181b" stopOpacity={0.28} />
+                        <stop offset="95%" stopColor="#18181b" stopOpacity={0.02} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.2)" />
@@ -773,7 +824,7 @@ export function AnalyticsView() {
                       type="monotone"
                       dataKey="tonnage"
                       name="Tonnage (t)"
-                      stroke="#d91324"
+                      stroke="#18181b"
                       strokeWidth={2.5}
                       fill="url(#hoTonGrad)"
                     />
@@ -921,7 +972,7 @@ export function AnalyticsView() {
                       yAxisId="left"
                       dataKey="mtbfHours"
                       name="MTBF (Hours)"
-                      fill="#d91324"
+                      fill="#18181b"
                       radius={[8, 8, 0, 0]}
                     />
                     <Line
@@ -1145,7 +1196,7 @@ export function AnalyticsView() {
                     <Bar
                       dataKey="utilizationPct"
                       name="Loaded Utilization (%)"
-                      fill="#d91324"
+                      fill="#18181b"
                       radius={[8, 8, 0, 0]}
                     />
                     <Bar

@@ -46,7 +46,7 @@ export function TablePagination({
                 onPageSizeChange(Number(e.target.value));
                 onPageChange(1);
               }}
-              className="h-7 cursor-pointer rounded-lg border border-input bg-background px-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-red-500/30"
+              className="h-7 cursor-pointer rounded-lg border border-input bg-background px-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-zinc-900/20 dark:focus:ring-white/20"
             >
               {pageSizeOptions.map((opt) => (
                 <option key={opt} value={opt}>
@@ -78,7 +78,7 @@ export function TablePagination({
             className={cn(
               "flex h-8 min-w-8 cursor-pointer items-center justify-center rounded-lg px-2 text-xs font-bold tabular-nums transition-all",
               num === safePage
-                ? "bg-red-600 text-white shadow-xs"
+                ? "bg-zinc-950 text-white shadow-xs dark:bg-white dark:text-zinc-950"
                 : "border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
           >

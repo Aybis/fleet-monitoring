@@ -66,7 +66,7 @@ export function HorusEyeLogo({
       <circle cx="32" cy="22" r="3.4" fill="currentColor" />
 
       {/* Glint / Satellite Highlight */}
-      <circle cx="34.4" cy="19.6" r="1.35" fill="#ffffff" fillOpacity="0.92" />
+      <circle cx="34.4" cy="19.6" r="1.35" fill="currentColor" fillOpacity="0.35" />
     </svg>
   );
 
@@ -77,7 +77,7 @@ export function HorusEyeLogo({
   return (
     <div
       className={cn(
-        "flex h-11 w-[74px] shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#e60012] via-[#d91324] to-[#9f0b18] text-white shadow-[0_6px_20px_rgba(230,0,18,0.48)] ring-1 ring-white/15",
+        "flex h-11 w-[74px] shrink-0 items-center justify-center rounded-2xl bg-white text-zinc-950 shadow-[0_6px_20px_rgba(0,0,0,0.35)] ring-1 ring-white/20",
         className
       )}
     >

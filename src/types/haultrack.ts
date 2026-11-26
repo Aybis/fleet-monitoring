@@ -233,3 +233,32 @@ export interface TelemetrySample {
   fuelRailMpa: number;
   coolantTempC: number;
 }
+
+export type EmergencyAlertType = "accident" | "urgent_dtc" | "can_loss";
+
+export interface EmergencyAlert {
+  id: string;
+  type: EmergencyAlertType;
+  severity: "EMERGENCY" | "CRITICAL";
+  truckId: string;
+  plate: string;
+  model: string;
+  driverName: string;
+  driverPhone: string;
+  location: string;
+  lat: number;
+  lng: number;
+  title: string;
+  summary: string;
+  dtcCode?: string;
+  gForce?: number;
+  speedBeforeKmh?: number;
+  speedAfterKmh?: number;
+  coolantTempC?: number;
+  fuelRailMpa?: number;
+  triggeredAt: string;
+  triggeredEpochMs: number;
+  status: "Active" | "Acknowledged" | "Dispatched" | "Resolved";
+  isDummySimulation?: boolean;
+  responseChecklist: Array<{ id: string; label: string; done: boolean }>;
+}

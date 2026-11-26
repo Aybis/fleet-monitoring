@@ -114,14 +114,14 @@ export function FleetView() {
               key={truck.id}
               className={cn(
                 "flex flex-col justify-between p-5 transition-all hover:shadow-md",
-                isSelected && "ring-2 ring-red-500/60"
+                isSelected && "border-zinc-950 ring-2 ring-zinc-950/20 dark:border-white dark:ring-white/25"
               )}
             >
               <div>
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-md bg-[#d91324] px-2 py-0.5 text-[10px] font-black tracking-wider text-white">
+                      <span className="rounded-md bg-zinc-950 px-2 py-0.5 text-[10px] font-black tracking-wider text-white dark:bg-white dark:text-zinc-950">
                         ISUZU {truck.series}
                       </span>
                       <h3 className="text-base font-extrabold text-foreground">{truck.id}</h3>
@@ -195,7 +195,7 @@ export function FleetView() {
                     <div
                       className={cn(
                         "h-full rounded-full transition-all",
-                        pct >= 85 ? "bg-amber-500" : "bg-red-600"
+                        pct >= 85 ? "bg-amber-500" : "bg-zinc-900 dark:bg-white"
                       )}
                       style={{ width: `${Math.min(100, pct)}%` }}
                     />

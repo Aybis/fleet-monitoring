@@ -27,7 +27,7 @@ export function TermTooltip({
         <span
           tabIndex={0}
           className={cn(
-            "inline-flex cursor-help items-center gap-1 underline decoration-dotted decoration-muted-foreground/55 underline-offset-[3px] transition-colors hover:text-foreground hover:decoration-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 rounded-xs",
+            "inline-flex cursor-help items-center gap-1 underline decoration-dotted decoration-muted-foreground/55 underline-offset-[3px] transition-colors hover:text-foreground hover:decoration-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 rounded-xs",
             className
           )}
         >
@@ -49,7 +49,7 @@ export function TermTooltip({
               {entry.fullName}
             </span>
           </div>
-          <span className="mt-1 inline-block rounded bg-red-600/25 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-red-300">
+          <span className="mt-1 inline-block rounded bg-white/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-zinc-200">
             {entry.category}
           </span>
           <p className="mt-1.5 text-[11px] leading-relaxed text-slate-300">

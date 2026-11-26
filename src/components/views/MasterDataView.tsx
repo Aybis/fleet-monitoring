@@ -281,7 +281,7 @@ export function MasterDataView() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#d91324] px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white">
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-950 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white dark:bg-white dark:text-zinc-950">
               <Database className="h-3 w-3" />
               Master Data Governance
             </span>
@@ -412,7 +412,7 @@ export function MasterDataView() {
               className={cn(
                 "inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all",
                 active
-                  ? "bg-red-600 text-white shadow-sm"
+                  ? "bg-zinc-950 text-white shadow-sm dark:bg-white dark:text-zinc-950"
                   : "border border-border bg-card text-muted-foreground hover:text-foreground"
               )}
             >
@@ -527,7 +527,7 @@ export function MasterDataView() {
                     return (
                       <tr key={item.code} className="hover:bg-muted/25">
                         <td className="px-4 py-3 align-top whitespace-nowrap">
-                          <span className="inline-block rounded-lg bg-red-600 px-2.5 py-1 font-mono text-xs font-extrabold text-white shadow-xs">
+                          <span className="inline-block rounded-lg bg-slate-900 px-2.5 py-1 font-mono text-xs font-extrabold text-white shadow-xs dark:bg-slate-700">
                             {item.code}
                           </span>
                           {item.j1939Spn && (

@@ -695,7 +695,7 @@ ${codeRows}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#d91324] px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white">
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-950 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white dark:bg-white dark:text-zinc-950">
               <Network className="h-3 w-3" />
               High-Level Design (HLD)
             </span>
@@ -822,7 +822,7 @@ ${codeRows}
               className={cn(
                 "inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all",
                 active
-                  ? "bg-red-600 text-white shadow-sm"
+                  ? "bg-zinc-950 text-white shadow-sm dark:bg-white dark:text-zinc-950"
                   : "border border-border bg-card text-muted-foreground hover:text-foreground"
               )}
             >

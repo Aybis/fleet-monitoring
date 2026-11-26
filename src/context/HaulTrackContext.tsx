@@ -16,6 +16,8 @@ import type {
   CargoSlot,
   CargoSlotItem,
   Driver,
+  EmergencyAlert,
+  EmergencyAlertType,
   HubMasterItem,
   NavPage,
   NotificationItem,
@@ -46,6 +48,67 @@ const INITIAL_HUBS: HubMasterItem[] = [
   { code: "DJJ", city: "Jayapura", region: "Papua", lat: -2.5916, lng: 140.669, docks: 2, status: "Active" },
 ];
 
+const INITIAL_EMERGENCY_ALERTS: EmergencyAlert[] = [
+  {
+    id: "emg-init-p2002",
+    type: "urgent_dtc",
+    severity: "CRITICAL",
+    truckId: "ISZ-118",
+    plate: "L 8719 UBA",
+    model: "Isuzu FORWARD FTR 260",
+    driverName: "Hendra Wijaya",
+    driverPhone: "+62 812-3401-8719",
+    location: "Surabaya Tanjung Perak Hub · Dock #1",
+    lat: -7.2041,
+    lng: 112.7351,
+    title: "CRITICAL DPD BLOCKAGE — P2002 Soot Load 86% (Urgent Regen)",
+    summary:
+      "Geotab GO9 detected J1939 SPN 3251 / FMI 0 (P2002). Exhaust backpressure exceeding threshold; parked DPD regeneration required before highway dispatch.",
+    dtcCode: "P2002",
+    coolantTempC: 83,
+    fuelRailMpa: 112,
+    triggeredAt: "08:52 WIB",
+    triggeredEpochMs: Date.now() - 1000 * 60 * 42,
+    status: "Acknowledged",
+    isDummySimulation: false,
+    responseChecklist: [
+      { id: "c1", label: "Verify unit parked safely at Tanjung Perak bay", done: true },
+      { id: "c2", label: "Notify Astra Isuzu Surabaya workshop supervisor", done: true },
+      { id: "c3", label: "Execute parked DPD regeneration cycle", done: false },
+      { id: "c4", label: "Re-scan ECU and confirm soot load < 20%", done: false },
+    ],
+  },
+  {
+    id: "emg-init-p0087",
+    type: "urgent_dtc",
+    severity: "CRITICAL",
+    truckId: "ISZ-501",
+    plate: "KT 8501 YLA",
+    model: "Isuzu D-MAX Rodeo 4×4",
+    driverName: "Fajar Nugroho",
+    driverPhone: "+62 815-4902-8501",
+    location: "Tol Balikpapan–Samarinda KM 38, Kaltim",
+    lat: -0.9612,
+    lng: 116.9532,
+    title: "URGENT FUEL RAIL DROP — P0087 Low Common-Rail Pressure (68 MPa)",
+    summary:
+      "Geotab GO9 reported common-rail pressure below target under load on 4JJ1-TCX. High risk of engine stall or limp-mode on Kaltim corridor.",
+    dtcCode: "P0087",
+    coolantTempC: 91,
+    fuelRailMpa: 68,
+    triggeredAt: "09:18 WIB",
+    triggeredEpochMs: Date.now() - 1000 * 60 * 18,
+    status: "Dispatched",
+    isDummySimulation: false,
+    responseChecklist: [
+      { id: "c1", label: "Contact driver Fajar Nugroho via cab radio", done: true },
+      { id: "c2", label: "Instruct driver to reduce load & pull over at Rest Area KM 42", done: true },
+      { id: "c3", label: "Dispatch Astra Isuzu Balikpapan Mobile Service (SCV + Fuel Filter)", done: true },
+      { id: "c4", label: "Confirm fuel rail recovers > 110 MPa before resuming", done: false },
+    ],
+  },
+];
+
 interface PersistedState {
   trucks: Truck[];
   drivers: Driver[];
@@ -57,6 +120,7 @@ interface PersistedState {
   selectedSlotId: string;
   obdCatalog: ObdDtcDefinition[];
   hubCatalog: HubMasterItem[];
+  emergencyAlerts: EmergencyAlert[];
 }
 
 function loadInitialState(): PersistedState {
@@ -89,6 +153,9 @@ function loadInitialState(): PersistedState {
             Array.isArray(parsed.hubCatalog) && parsed.hubCatalog.length > 0
               ? parsed.hubCatalog
               : INITIAL_HUBS,
+          emergencyAlerts: Array.isArray(parsed.emergencyAlerts)
+            ? parsed.emergencyAlerts
+            : INITIAL_EMERGENCY_ALERTS,
         };
       }
     }
@@ -106,6 +173,7 @@ function loadInitialState(): PersistedState {
     selectedSlotId: "A5",
     obdCatalog: OBD_CODE_LIST,
     hubCatalog: INITIAL_HUBS,
+    emergencyAlerts: INITIAL_EMERGENCY_ALERTS,
   };
 }
 
@@ -179,6 +247,16 @@ interface HaulTrackContextValue {
   deleteObdCode: (code: string) => void;
   addHubCode: (hub: HubMasterItem) => boolean;
   deleteHubCode: (code: string) => void;
+  emergencyAlerts: EmergencyAlert[];
+  activeIncidentId: string | null;
+  setActiveIncidentId: (id: string | null) => void;
+  alertSoundEnabled: boolean;
+  setAlertSoundEnabled: (enabled: boolean) => void;
+  triggerDummyFailure: (type: EmergencyAlertType, targetTruckId?: string) => EmergencyAlert;
+  acknowledgeEmergencyAlert: (id: string) => void;
+  dispatchEmergencyResponse: (id: string) => void;
+  toggleIncidentChecklistItem: (alertId: string, itemId: string) => void;
+  resolveEmergencyAlert: (id: string) => void;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
   updateSettings: (patch: Partial<AppSettings>) => void;
@@ -228,12 +306,37 @@ function seedTelemetryHistory(trucks: Truck[]): Record<string, TelemetrySample[]
   return map;
 }
 
+function playUrgentAlertChime(isAccident: boolean) {
+  try {
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const notes = isAccident ? [880, 660, 880, 660] : [784, 988, 784];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = isAccident ? "sawtooth" : "triangle";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.06, ctx.currentTime + i * 0.16);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.16 + 0.14);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + i * 0.16);
+      osc.stop(ctx.currentTime + i * 0.16 + 0.15);
+    });
+  } catch {
+    // Ignore autoplay restrictions
+  }
+}
+
 export function HaulTrackProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<PersistedState>(loadInitialState);
   const [activePage, setActivePage] = useState<NavPage>("dashboard");
   const [highlightedSlotId, setHighlightedSlotId] = useState<string | null>(null);
   const [liveTrackingOpen, setLiveTrackingOpen] = useState(false);
   const [dispatchModalOpen, setDispatchModalOpen] = useState(false);
+  const [activeIncidentId, setActiveIncidentId] = useState<string | null>(null);
+  const [alertSoundEnabled, setAlertSoundEnabled] = useState(true);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [liveTickCount, setLiveTickCount] = useState(1);
   const [lastHeartbeat, setLastHeartbeat] = useState<string>(() => formatLiveClock());
@@ -885,6 +988,9 @@ export function HaulTrackProvider({ children }: { children: React.ReactNode }) {
 
   const acknowledgeDtc = useCallback(
     (truckId: string, code: string) => {
+      const now = formatCurrentTime();
+      const targetTruck = state.trucks.find((t) => t.id === truckId);
+      const woId = `WO-${String(Date.now()).slice(-4)}`;
       setState((prev) => ({
         ...prev,
         trucks: prev.trucks.map((t) =>
@@ -900,14 +1006,43 @@ export function HaulTrackProvider({ children }: { children: React.ReactNode }) {
               }
             : t
         ),
+        emergencyAlerts: prev.emergencyAlerts.map((a) =>
+          a.truckId === truckId && a.dtcCode === code && a.status === "Active"
+            ? { ...a, status: "Acknowledged" }
+            : a
+        ),
+        activities: [
+          {
+            id: `act-wo-${Date.now()}`,
+            time: now,
+            message: `Workshop ticket ${woId} logged for ${code}`,
+            detail: `${truckId}${targetTruck ? ` (${targetTruck.plate})` : ""} · Maintenance bay notified`,
+            type: "obd" as const,
+            truckId,
+          },
+          ...prev.activities,
+        ].slice(0, 30),
+        notifications: [
+          {
+            id: `not-wo-${Date.now()}`,
+            title: `Workshop Ticket ${woId} · ${code}`,
+            description: `Maintenance bay notified for ${truckId}${targetTruck ? ` (${targetTruck.plate})` : ""}.`,
+            time: "Just now",
+            severity: "info" as const,
+            read: false,
+            truckId,
+            openObd: true,
+          },
+          ...prev.notifications,
+        ].slice(0, 20),
       }));
       pushToast({
-        title: `Service ticket logged for ${code}`,
-        description: `Maintenance bay notified for ${truckId}.`,
-        variant: "default",
+        title: `Service ticket ${woId} logged for ${code}`,
+        description: `Workshop bay notified for ${truckId} & logged to Recent Activity.`,
+        variant: "success",
       });
     },
-    [pushToast]
+    [state.trucks, pushToast]
   );
 
   const runDpfRegen = useCallback(
@@ -1263,8 +1398,323 @@ export function HaulTrackProvider({ children }: { children: React.ReactNode }) {
     [pushToast]
   );
 
+  const triggerDummyFailure = useCallback(
+    (type: EmergencyAlertType, targetTruckId?: string): EmergencyAlert => {
+      const defaultId =
+        type === "accident" ? "ISZ-204" : type === "urgent_dtc" ? "ISZ-309" : "ISZ-615";
+      const truck =
+        state.trucks.find((t) => t.id === (targetTruckId || defaultId)) ?? state.trucks[0];
+      const driver =
+        state.drivers.find((d) => d.id === truck.driverId) ?? state.drivers[0];
+      const nowStr = formatCurrentTime();
+      const id = `emg-${type}-${Date.now()}`;
+
+      let alert: EmergencyAlert;
+      if (type === "accident") {
+        const prevSpeed = Math.max(58, truck.route.speedMph);
+        alert = {
+          id,
+          type: "accident",
+          severity: "EMERGENCY",
+          truckId: truck.id,
+          plate: truck.plate,
+          model: truck.model,
+          driverName: driver.name,
+          driverPhone: driver.phone,
+          location: truck.route.currentLocation,
+          lat: truck.gps.lat,
+          lng: truck.gps.lng,
+          title: `ACCIDENT DETECTED — 3.4G Impact on ${truck.plate} (Geotab GO9)`,
+          summary: `Geotab GO9 3-axis accelerometer detected sudden 3.4G frontal deceleration (${prevSpeed} → 0 km/h in 1.1s) with abrupt CAN shock trigger. Immediate driver safety check & emergency dispatch required.`,
+          dtcCode: "U0100",
+          gForce: 3.4,
+          speedBeforeKmh: prevSpeed,
+          speedAfterKmh: 0,
+          coolantTempC: truck.obd.coolantTempC,
+          fuelRailMpa: 0,
+          triggeredAt: nowStr,
+          triggeredEpochMs: Date.now(),
+          status: "Active",
+          isDummySimulation: true,
+          responseChecklist: [
+            { id: "s1", label: `Call driver ${driver.name} (${driver.phone}) immediately`, done: false },
+            { id: "s2", label: "Verify injuries & contact Jasa Marga / Emergency 112 if needed", done: false },
+            { id: "s3", label: "Dispatch Astra Isuzu Towing & Regional Fleet Patrol", done: false },
+            { id: "s4", label: "Secure cargo manifest & log Geotab crash telemetry for insurance", done: false },
+          ],
+        };
+      } else if (type === "urgent_dtc") {
+        alert = {
+          id,
+          type: "urgent_dtc",
+          severity: "CRITICAL",
+          truckId: truck.id,
+          plate: truck.plate,
+          model: truck.model,
+          driverName: driver.name,
+          driverPhone: driver.phone,
+          location: truck.route.currentLocation,
+          lat: truck.gps.lat,
+          lng: truck.gps.lng,
+          title: `URGENT ENGINE FAILURE — P0087 & Overheat 114°C on ${truck.plate}`,
+          summary: `Geotab GO9 FaultData reported critical Fuel Rail Pressure collapse (58 MPa) paired with Coolant Overheat (114°C · P0118). High risk of engine seizure — driver must pull over immediately.`,
+          dtcCode: "P0087",
+          speedBeforeKmh: truck.route.speedMph,
+          speedAfterKmh: Math.min(25, truck.route.speedMph),
+          coolantTempC: 114,
+          fuelRailMpa: 58,
+          triggeredAt: nowStr,
+          triggeredEpochMs: Date.now(),
+          status: "Active",
+          isDummySimulation: true,
+          responseChecklist: [
+            { id: "s1", label: `Instruct ${driver.name} to pull over & shut down engine immediately`, done: false },
+            { id: "s2", label: "Confirm hazard triangles placed on shoulder", done: false },
+            { id: "s3", label: "Dispatch Astra Isuzu Mobile Workshop (Coolant + SCV Kit)", done: false },
+            { id: "s4", label: "Arrange relief Isuzu truck for urgent cargo transfer", done: false },
+          ],
+        };
+      } else {
+        alert = {
+          id,
+          type: "can_loss",
+          severity: "CRITICAL",
+          truckId: truck.id,
+          plate: truck.plate,
+          model: truck.model,
+          driverName: driver.name,
+          driverPhone: driver.phone,
+          location: truck.route.currentLocation,
+          lat: truck.gps.lat,
+          lng: truck.gps.lng,
+          title: `URGENT CAN-BUS LOSS — U0100 ECM Disconnect / Tamper on ${truck.plate}`,
+          summary: `Geotab GO9 lost SAE J1939 CAN-Bus heartbeat with Isuzu ECM (U0100 · SPN 639 / FMI 2). Possible harness failure, battery bus drop, or unauthorized OBD unplug event.`,
+          dtcCode: "U0100",
+          coolantTempC: truck.obd.coolantTempC,
+          fuelRailMpa: truck.obd.fuelRailMpa,
+          triggeredAt: nowStr,
+          triggeredEpochMs: Date.now(),
+          status: "Active",
+          isDummySimulation: true,
+          responseChecklist: [
+            { id: "s1", label: `Verify live location & contact ${driver.name}`, done: false },
+            { id: "s2", label: "Inspect Geotab GO9 9-pin/OBD harness seating & 24V fuse", done: false },
+            { id: "s3", label: "Run remote Geotab Device Ping & ECU re-sync", done: false },
+            { id: "s4", label: "Log security/tamper check if device was unplugged", done: false },
+          ],
+        };
+      }
+
+      if (alertSoundEnabled) {
+        playUrgentAlertChime(type === "accident");
+      }
+
+      setState((prev) => ({
+        ...prev,
+        activeTruckId: truck.id,
+        trucks: prev.trucks.map((t) => {
+          if (t.id !== truck.id) return t;
+          const existingCodes = t.obd.activeCodes;
+          const nextCodes = [...existingCodes];
+          const injectCode = (code: string, freezeTemp: number) => {
+            if (!nextCodes.some((c) => c.code === code)) {
+              nextCodes.unshift({
+                code,
+                detectedAt: nowStr,
+                freezeRpm: type === "accident" ? 0 : Math.max(1850, t.obd.rpm),
+                freezeSpeedMph: type === "accident" ? 0 : t.route.speedMph,
+                freezeTempC: freezeTemp,
+                occurrences: 1,
+                acknowledged: false,
+              });
+            }
+          };
+
+          if (type === "accident") {
+            injectCode("U0100", t.obd.coolantTempC);
+            return {
+              ...t,
+              status: "Maintenance",
+              route: { ...t.route, speedMph: 0 },
+              obd: {
+                ...t.obd,
+                rpm: 0,
+                fuelRailMpa: 0,
+                lastScan: nowStr,
+                activeCodes: nextCodes,
+              },
+            };
+          }
+          if (type === "urgent_dtc") {
+            injectCode("P0087", 114);
+            injectCode("P0118", 114);
+            return {
+              ...t,
+              status: "Maintenance",
+              route: { ...t.route, speedMph: Math.min(20, t.route.speedMph) },
+              obd: {
+                ...t.obd,
+                coolantTempC: 114,
+                fuelRailMpa: 58,
+                lastScan: nowStr,
+                activeCodes: nextCodes,
+              },
+            };
+          }
+          injectCode("U0100", t.obd.coolantTempC);
+          return {
+            ...t,
+            obd: {
+              ...t.obd,
+              lastScan: nowStr,
+              activeCodes: nextCodes,
+            },
+          };
+        }),
+        emergencyAlerts: [alert, ...prev.emergencyAlerts].slice(0, 20),
+        notifications: [
+          {
+            id: `not-emg-${Date.now()}`,
+            title: alert.title,
+            description: `${alert.location} · Driver: ${alert.driverName}`,
+            time: "Just now",
+            severity: "warning" as const,
+            read: false,
+            truckId: truck.id,
+            openObd: true,
+          },
+          ...prev.notifications,
+        ].slice(0, 20),
+        activities: [
+          {
+            id: `act-emg-${Date.now()}`,
+            time: nowStr,
+            message: alert.title,
+            detail: alert.location,
+            type: "obd" as const,
+            truckId: truck.id,
+          },
+          ...prev.activities,
+        ].slice(0, 30),
+      }));
+
+      pushToast({
+        title: type === "accident" ? "EMERGENCY: Accident Detected (Dummy)" : "URGENT OBD Failure Triggered",
+        description: `${truck.id} (${truck.plate}) at ${truck.route.currentLocation}`,
+        variant: "destructive",
+      });
+
+      return alert;
+    },
+    [state.trucks, state.drivers, alertSoundEnabled, pushToast]
+  );
+
+  const acknowledgeEmergencyAlert = useCallback(
+    (id: string) => {
+      setState((prev) => ({
+        ...prev,
+        emergencyAlerts: prev.emergencyAlerts.map((a) =>
+          a.id === id && a.status === "Active" ? { ...a, status: "Acknowledged" } : a
+        ),
+      }));
+      pushToast({
+        title: "Emergency Alert Acknowledged",
+        description: "Incident moved to active operator supervision.",
+        variant: "warning",
+      });
+    },
+    [pushToast]
+  );
+
+  const dispatchEmergencyResponse = useCallback(
+    (id: string) => {
+      const found = state.emergencyAlerts.find((a) => a.id === id);
+      setState((prev) => ({
+        ...prev,
+        emergencyAlerts: prev.emergencyAlerts.map((a) =>
+          a.id === id
+            ? {
+                ...a,
+                status: "Dispatched",
+                responseChecklist: a.responseChecklist.map((c, idx) =>
+                  idx <= 2 ? { ...c, done: true } : c
+                ),
+              }
+            : a
+        ),
+        activities: found
+          ? [
+              {
+                id: `act-disp-emg-${Date.now()}`,
+                time: formatCurrentTime(),
+                message: `Emergency unit dispatched to ${found.plate}`,
+                detail: `${found.location} · Astra Isuzu Mobile Siaga`,
+                type: "obd",
+                truckId: found.truckId,
+              },
+              ...prev.activities,
+            ]
+          : prev.activities,
+      }));
+      pushToast({
+        title: "Emergency Response Dispatched",
+        description: found
+          ? `Astra Isuzu Mobile Service & Towing routed to ${found.plate} (${found.location}).`
+          : "Emergency response unit dispatched.",
+        variant: "success",
+      });
+    },
+    [state.emergencyAlerts, pushToast]
+  );
+
+  const toggleIncidentChecklistItem = useCallback((alertId: string, itemId: string) => {
+    setState((prev) => ({
+      ...prev,
+      emergencyAlerts: prev.emergencyAlerts.map((a) =>
+        a.id === alertId
+          ? {
+              ...a,
+              responseChecklist: a.responseChecklist.map((c) =>
+                c.id === itemId ? { ...c, done: !c.done } : c
+              ),
+            }
+          : a
+      ),
+    }));
+  }, []);
+
+  const resolveEmergencyAlert = useCallback(
+    (id: string) => {
+      const found = state.emergencyAlerts.find((a) => a.id === id);
+      setState((prev) => ({
+        ...prev,
+        emergencyAlerts: prev.emergencyAlerts.map((a) =>
+          a.id === id
+            ? {
+                ...a,
+                status: "Resolved",
+                responseChecklist: a.responseChecklist.map((c) => ({ ...c, done: true })),
+              }
+            : a
+        ),
+      }));
+      if (activeIncidentId === id) {
+        setActiveIncidentId(null);
+      }
+      pushToast({
+        title: "Incident Marked Resolved",
+        description: found
+          ? `${found.plate} emergency closed & archived to HORUS audit log.`
+          : "Emergency alert resolved.",
+        variant: "success",
+      });
+    },
+    [state.emergencyAlerts, activeIncidentId, pushToast]
+  );
+
   const resetDemoData = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
+    setActiveIncidentId(null);
     setState({
       trucks: INITIAL_TRUCKS,
       drivers: INITIAL_DRIVERS,
@@ -1276,6 +1726,7 @@ export function HaulTrackProvider({ children }: { children: React.ReactNode }) {
       selectedSlotId: "A5",
       obdCatalog: OBD_CODE_LIST,
       hubCatalog: INITIAL_HUBS,
+      emergencyAlerts: INITIAL_EMERGENCY_ALERTS,
     });
     pushToast({
       title: "HORUS Fleet Intelligence reset",
@@ -1354,6 +1805,16 @@ export function HaulTrackProvider({ children }: { children: React.ReactNode }) {
     deleteObdCode,
     addHubCode,
     deleteHubCode,
+    emergencyAlerts: state.emergencyAlerts,
+    activeIncidentId,
+    setActiveIncidentId,
+    alertSoundEnabled,
+    setAlertSoundEnabled,
+    triggerDummyFailure,
+    acknowledgeEmergencyAlert,
+    dispatchEmergencyResponse,
+    toggleIncidentChecklistItem,
+    resolveEmergencyAlert,
     markNotificationRead,
     markAllNotificationsRead,
     updateSettings,

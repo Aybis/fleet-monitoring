@@ -152,13 +152,13 @@ export function TopHeader() {
         onClick={() => setActivePage("dashboard")}
         className="flex cursor-pointer items-center gap-2.5 text-left transition-opacity hover:opacity-85"
       >
-        <HorusEyeLogo variant="mark" className="h-8 w-11 text-[#e60012] dark:text-[#ff3b4e]" />
+        <HorusEyeLogo variant="mark" className="h-8 w-11 text-zinc-950 dark:text-white" />
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
             <span className="text-[22px] font-black leading-none tracking-[0.16em] text-foreground">
               HORUS
             </span>
-            <span className="inline-flex items-center rounded-md bg-red-600/12 px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wider text-red-700 dark:text-red-300">
+            <span className="inline-flex items-center rounded-md bg-zinc-900/8 px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wider text-zinc-800 dark:bg-white/12 dark:text-zinc-200">
               Fleet Eye
             </span>
           </div>
@@ -174,7 +174,7 @@ export function TopHeader() {
           className={cn(
             "flex h-11 items-center gap-2.5 rounded-full border bg-card/90 px-4 shadow-[0_2px_10px_rgba(15,23,42,0.04)] backdrop-blur-sm transition-all",
             searchFocused
-              ? "border-red-500/60 ring-2 ring-red-500/15"
+              ? "border-zinc-900/50 ring-2 ring-zinc-900/10 dark:border-white/50 dark:ring-white/15"
               : "border-border/80 hover:border-border"
           )}
         >
@@ -414,22 +414,22 @@ export function TopHeader() {
           className={cn(
             "hidden h-10 cursor-pointer items-center gap-2 rounded-full border px-3.5 text-xs font-bold shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-all md:inline-flex",
             settings.liveTelemetryUpdates
-              ? "border-red-500/35 bg-card text-foreground hover:border-red-500/60"
+              ? "border-emerald-500/35 bg-card text-foreground hover:border-emerald-500/60"
               : "border-border bg-muted/70 text-muted-foreground hover:text-foreground"
           )}
         >
           <span className="relative flex h-2 w-2">
             {settings.liveTelemetryUpdates && (
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
             )}
             <span
               className={cn(
                 "relative inline-flex h-2 w-2 rounded-full",
-                settings.liveTelemetryUpdates ? "bg-red-600" : "bg-slate-400"
+                settings.liveTelemetryUpdates ? "bg-emerald-500" : "bg-slate-400"
               )}
             />
           </span>
-          <span className="uppercase tracking-wider text-[10px] font-black text-red-600 dark:text-red-400">
+          <span className="uppercase tracking-wider text-[10px] font-black text-emerald-700 dark:text-emerald-400">
             {settings.liveTelemetryUpdates ? "LIVE" : "PAUSED"}
           </span>
           <span className="font-mono text-[11px] font-semibold text-muted-foreground tabular-nums">
@@ -545,7 +545,7 @@ export function TopHeader() {
               aria-label="Account menu"
               className="flex cursor-pointer items-center gap-1.5 rounded-full py-0.5 pl-0.5 pr-1.5 transition-colors hover:bg-muted/80"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#c8102e] text-sm font-bold text-white shadow-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-950 text-sm font-bold text-white shadow-sm dark:bg-white dark:text-zinc-950">
                 A
               </div>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />

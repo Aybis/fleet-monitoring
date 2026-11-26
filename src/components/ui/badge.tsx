@@ -7,12 +7,12 @@ const badgeStyles = cva(
   {
     variants: {
       variant: {
-        default: "bg-red-500/12 text-red-700 dark:text-red-300",
+        default: "bg-zinc-900/8 text-zinc-900 dark:bg-white/12 dark:text-zinc-100",
         standard: "bg-sky-500/12 text-sky-700 dark:text-sky-300",
-        express: "bg-red-500/14 text-red-700 dark:text-red-300",
+        express: "bg-zinc-900 text-white dark:bg-white dark:text-zinc-950",
         sameday: "bg-violet-500/12 text-violet-700 dark:text-violet-300",
         warning: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-        destructive: "bg-red-500/12 text-red-700 dark:text-red-300",
+        destructive: "bg-red-600/14 text-red-700 dark:text-red-300",
         outline: "border border-border text-muted-foreground bg-transparent",
         secondary: "bg-secondary text-secondary-foreground",
       },
