@@ -7,6 +7,8 @@ import {
   Truck,
   BarChart3,
   FileText,
+  Database,
+  Network,
   Settings,
   PanelLeftOpen,
   PanelLeftClose,
@@ -85,6 +87,18 @@ const NAV_GROUPS: Array<{
         label: "Reports",
         subtitle: "Manifests & CSV export",
         icon: FileText,
+      },
+      {
+        id: "master-data",
+        label: "Master Data",
+        subtitle: "DTC codes, severity & hubs",
+        icon: Database,
+      },
+      {
+        id: "hld",
+        label: "System HLD",
+        subtitle: "Geotab & HORUS blueprint",
+        icon: Network,
       },
       {
         id: "settings",
@@ -170,9 +184,9 @@ export function Sidebar() {
           </div>
 
           {/* Purpose-Grouped Navigation List (Scrollable if viewport is short) */}
-          <nav className="sidebar-scroll flex-1 space-y-3 overflow-y-auto px-2 py-1">
+          <nav className="sidebar-scroll flex-1 space-y-2 overflow-y-auto px-2 py-0.5">
             {NAV_GROUPS.map((group) => (
-              <div key={group.title} className="space-y-1">
+              <div key={group.title} className="space-y-0.5">
                 <div
                   className={cn(
                     "flex items-center gap-1.5 px-2 pt-0.5 text-[9px] font-extrabold uppercase tracking-[0.16em] text-red-200/45",
@@ -202,8 +216,8 @@ export function Sidebar() {
                       className={cn(
                         "group relative flex w-full cursor-pointer items-center rounded-2xl transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300/70",
                         expanded
-                          ? "justify-between gap-2.5 px-3 py-2 text-left"
-                          : "flex-col justify-center gap-1 py-2 text-center",
+                          ? "justify-between gap-2.5 px-3 py-1.5 text-left"
+                          : "flex-col justify-center gap-0.5 py-1.5 text-center",
                         isActive
                           ? "bg-[#d91324] text-white shadow-[0_6px_18px_rgba(217,19,36,0.45)]"
                           : "text-red-100/75 hover:bg-white/8 hover:text-white"

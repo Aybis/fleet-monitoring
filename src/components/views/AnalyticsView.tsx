@@ -39,7 +39,6 @@ import {
   getVehicleObdHealth,
   useHaulTrack,
 } from "@/context/HaulTrackContext";
-import { getDtcInfo } from "@/data/obdDatabase";
 import {
   COST_TREND_SERIES,
   DELAY_ROOT_CAUSES,
@@ -98,6 +97,8 @@ export function AnalyticsView() {
     pushToast,
     liveTickCount,
     lastHeartbeat,
+    obdCatalog,
+    lookupDtc,
   } = useHaulTrack();
 
   const [tab, setTab] = useState<HoTab>("overview");
@@ -183,10 +184,10 @@ export function AnalyticsView() {
   const hoKpis = useMemo(() => {
     const totalUnits = Math.max(1, filteredTrucks.length);
     const criticalUnits = filteredTrucks.filter(
-      (t) => getVehicleObdHealth(t) === "Critical"
+      (t) => getVehicleObdHealth(t, obdCatalog) === "Critical"
     ).length;
     const warningUnits = filteredTrucks.filter(
-      (t) => getVehicleObdHealth(t) === "Warning"
+      (t) => getVehicleObdHealth(t, obdCatalog) === "Warning"
     ).length;
     const activeDtcCount = filteredTrucks.reduce(
       (sum, t) => sum + t.obd.activeCodes.length,
@@ -262,7 +263,7 @@ export function AnalyticsView() {
       liveAvgSpeed,
       liveBurnRateLhr,
     };
-  }, [filteredTrucks, filteredBranches, filteredSeriesMetrics, costTrendData]);
+  }, [filteredTrucks, filteredBranches, filteredSeriesMetrics, costTrendData, obdCatalog]);
 
   // Live OBD-II subsystem breakdown combining real active fleet DTCs + 30d HO telemetry
   const obdSubsystemData = useMemo(() => {
@@ -278,7 +279,7 @@ export function AnalyticsView() {
 
     for (const t of filteredTrucks) {
       for (const dtc of t.obd.activeCodes) {
-        const info = getDtcInfo(dtc.code);
+        const info = lookupDtc(dtc.code);
         if (base[info.subsystem]) {
           base[info.subsystem].activeNow += 1;
         }
@@ -286,7 +287,7 @@ export function AnalyticsView() {
     }
 
     return Object.values(base).sort((a, b) => b.last30d - a.last30d);
-  }, [filteredTrucks]);
+  }, [filteredTrucks, lookupDtc]);
 
   // Export HO Executive CSV Brief
   const exportHoBrief = () => {
@@ -978,7 +979,6 @@ export function AnalyticsView() {
                   {filteredTrucks
                     .slice((pmPage - 1) * pmPageSize, pmPage * pmPageSize)
                     .map((t) => {
-                    const health = getVehicleObdHealth(t);
                     const nextPmKm = Math.ceil((t.odometerKm + 1) / 10000) * 10000;
                     const kmLeft = nextPmKm - t.odometerKm;
                     return (
@@ -1050,15 +1050,24 @@ export function AnalyticsView() {
                             <Badge variant="secondary">0 Faults</Badge>
                           ) : (
                             <div className="flex flex-wrap gap-1">
-                              {t.obd.activeCodes.map((c) => (
-                                <Badge
-                                  key={c.code}
-                                  variant={health === "Critical" ? "destructive" : "warning"}
-                                  className="font-mono"
-                                >
-                                  {c.code}
-                                </Badge>
-                              ))}
+                              {t.obd.activeCodes.map((c) => {
+                                const codeSeverity = lookupDtc(c.code).severity;
+                                return (
+                                  <Badge
+                                    key={c.code}
+                                    variant={
+                                      codeSeverity === "Critical"
+                                        ? "destructive"
+                                        : codeSeverity === "Warning"
+                                        ? "warning"
+                                        : "standard"
+                                    }
+                                    className="font-mono"
+                                  >
+                                    {c.code}
+                                  </Badge>
+                                );
+                              })}
                             </div>
                           )}
                         </td>

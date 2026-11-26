@@ -27,7 +27,6 @@ import {
   getVehicleObdHealth,
   useHaulTrack,
 } from "@/context/HaulTrackContext";
-import { getDtcInfo } from "@/data/obdDatabase";
 import {
   IndonesiaLeafletMap,
   type MapCameraCommand,
@@ -52,6 +51,8 @@ export function LiveMapView() {
     scanVehicleObd,
     updateSettings,
     lastHeartbeat,
+    obdCatalog,
+    lookupDtc,
   } = useHaulTrack();
 
   const [focusPreset, setFocusPreset] = useState<
@@ -69,7 +70,7 @@ export function LiveMapView() {
 
   const visibleTrucks = trucks.filter((t) => {
     if (seriesFilter !== "ALL" && t.series !== seriesFilter) return false;
-    const health = getVehicleObdHealth(t);
+    const health = getVehicleObdHealth(t, obdCatalog);
     if (obdFilter === "ALERTS" && health === "Healthy") return false;
     if (obdFilter === "HEALTHY" && health !== "Healthy") return false;
     return true;
@@ -77,7 +78,7 @@ export function LiveMapView() {
 
   const selectedDriver =
     drivers.find((d) => d.id === activeTruck.driverId) ?? drivers[0];
-  const selectedObdHealth = getVehicleObdHealth(activeTruck);
+  const selectedObdHealth = getVehicleObdHealth(activeTruck, obdCatalog);
   const selectedLoadKg = getTruckLoadKg(activeTruck);
   const selectedLoadPct = getTruckLoadPct(activeTruck);
 
@@ -373,6 +374,7 @@ export function LiveMapView() {
             <IndonesiaLeafletMap
               trucks={visibleTrucks}
               activeTruck={activeTruck}
+              obdCatalog={obdCatalog}
               showRoutes={showRoutes}
               showObdBadges={showObdBadges}
               showGeofences={showGeofences}
@@ -546,7 +548,7 @@ export function LiveMapView() {
               ) : (
                 <div className="mt-2 space-y-1.5">
                   {activeTruck.obd.activeCodes.map((dtc) => {
-                    const info = getDtcInfo(dtc.code);
+                    const info = lookupDtc(dtc.code);
                     return (
                       <div
                         key={dtc.code}
@@ -556,7 +558,16 @@ export function LiveMapView() {
                           <span className="font-mono text-[11px] font-extrabold text-red-600 dark:text-red-400">
                             {dtc.code}
                           </span>
-                          <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                          <span
+                            className={cn(
+                              "text-[10px] font-semibold",
+                              info.severity === "Critical"
+                                ? "text-red-600 dark:text-red-400"
+                                : info.severity === "Warning"
+                                ? "text-amber-600 dark:text-amber-400"
+                                : "text-sky-600 dark:text-sky-400"
+                            )}
+                          >
                             {info.severity}
                           </span>
                         </div>
@@ -604,7 +615,7 @@ export function LiveMapView() {
             <div className="space-y-1.5">
               {visibleTrucks.map((t) => {
                 const selected = t.id === activeTruck.id;
-                const obd = getVehicleObdHealth(t);
+                const obd = getVehicleObdHealth(t, obdCatalog);
                 return (
                   <button
                     key={t.id}

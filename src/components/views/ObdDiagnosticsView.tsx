@@ -11,9 +11,9 @@ import {
 } from "recharts";
 import {
   Activity,
-  AlertTriangle,
   CheckCircle2,
   Cpu,
+  Database,
   Flame,
   Gauge,
   BatteryCharging,
@@ -28,7 +28,6 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { getVehicleObdHealth, useHaulTrack } from "@/context/HaulTrackContext";
-import { getDtcInfo, OBD_CODE_LIST } from "@/data/obdDatabase";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -52,6 +51,8 @@ export function ObdDiagnosticsView() {
     settings,
     telemetryHistory,
     lastHeartbeat,
+    obdCatalog,
+    lookupDtc,
   } = useHaulTrack();
 
   const liveSeries = telemetryHistory[activeTruck.id] ?? [];
@@ -62,11 +63,11 @@ export function ObdDiagnosticsView() {
   const [decoderPageSize, setDecoderPageSize] = useState(5);
   const [isScanning, setIsScanning] = useState(false);
 
-  const obdHealth = getVehicleObdHealth(activeTruck);
+  const obdHealth = getVehicleObdHealth(activeTruck, obdCatalog);
   const totalActiveDtcs = trucks.reduce((s, t) => s + t.obd.activeCodes.length, 0);
   const criticalCount = trucks.reduce(
     (s, t) =>
-      s + t.obd.activeCodes.filter((c) => getDtcInfo(c.code).severity === "Critical").length,
+      s + t.obd.activeCodes.filter((c) => lookupDtc(c.code).severity === "Critical").length,
     0
   );
 
@@ -80,7 +81,7 @@ export function ObdDiagnosticsView() {
 
   const filteredLookupCodes = useMemo(() => {
     const q = dtcSearch.trim().toLowerCase();
-    return OBD_CODE_LIST.filter((item) => {
+    return obdCatalog.filter((item) => {
       if (subsystemFilter !== "All" && item.subsystem !== subsystemFilter) return false;
       if (!q) return true;
       return (
@@ -91,7 +92,7 @@ export function ObdDiagnosticsView() {
         (item.j1939Spn?.toLowerCase().includes(q) ?? false)
       );
     });
-  }, [dtcSearch, subsystemFilter]);
+  }, [dtcSearch, subsystemFilter, obdCatalog]);
 
   const decoderTotalPages = Math.max(1, Math.ceil(filteredLookupCodes.length / decoderPageSize));
   const safeDecoderPage = Math.min(decoderPage, decoderTotalPages);
@@ -156,7 +157,7 @@ export function ObdDiagnosticsView() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7">
         {trucks.map((truck) => {
           const isSelected = truck.id === activeTruck.id;
-          const health = getVehicleObdHealth(truck);
+          const health = getVehicleObdHealth(truck, obdCatalog);
           return (
             <button
               key={truck.id}
@@ -522,7 +523,7 @@ export function ObdDiagnosticsView() {
         ) : (
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             {activeTruck.obd.activeCodes.map((activeDtc) => {
-              const info = getDtcInfo(activeDtc.code);
+              const info = lookupDtc(activeDtc.code);
               const isCritical = info.severity === "Critical";
 
               return (
@@ -692,17 +693,28 @@ export function ObdDiagnosticsView() {
               turbo) to read its exact technical meaning &amp; repair steps.
             </p>
           </div>
-          <div className="relative w-full sm:w-72">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={dtcSearch}
-              onChange={(e) => {
-                setDtcSearch(e.target.value);
-                setDecoderPage(1);
-              }}
-              placeholder="Search code (P2002, EGR, fuel)..."
-              className="pl-8 text-xs"
-            />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative w-full sm:w-64">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={dtcSearch}
+                onChange={(e) => {
+                  setDtcSearch(e.target.value);
+                  setDecoderPage(1);
+                }}
+                placeholder="Search code (P2002, EGR, fuel)..."
+                className="pl-8 text-xs"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setActivePage("master-data")}
+              className="h-9 rounded-xl px-3 text-xs font-semibold"
+            >
+              <Database className="h-3.5 w-3.5 text-red-600" />
+              Manage Codes &amp; Severity
+            </Button>
           </div>
         </div>
 

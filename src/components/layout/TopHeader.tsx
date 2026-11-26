@@ -16,7 +16,6 @@ import {
   X,
 } from "lucide-react";
 import { useHaulTrack } from "@/context/HaulTrackContext";
-import { OBD_CODE_LIST } from "@/data/obdDatabase";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   ActionMenu,
@@ -46,6 +45,7 @@ export function TopHeader() {
     resetDemoData,
     liveTickCount,
     lastHeartbeat,
+    obdCatalog,
   } = useHaulTrack();
 
   const [query, setQuery] = useState("");
@@ -80,7 +80,7 @@ export function TopHeader() {
         t.route.destinationCity.toLowerCase().includes(q)
     );
 
-    const matchedObd = OBD_CODE_LIST.filter(
+    const matchedObd = obdCatalog.filter(
       (c) =>
         c.code.toLowerCase().includes(q) ||
         c.title.toLowerCase().includes(q) ||
@@ -142,7 +142,7 @@ export function TopHeader() {
         matchedQueued.length +
         matchedDrivers.length,
     };
-  }, [query, trucks, queuedShipments, drivers]);
+  }, [query, trucks, queuedShipments, drivers, obdCatalog]);
 
   return (
     <header className="flex flex-wrap items-center justify-between gap-4 pb-5 pt-1">
@@ -266,7 +266,15 @@ export function TopHeader() {
                             <p className="truncate text-xs text-muted-foreground">{c.meaning}</p>
                           </div>
                         </div>
-                        <Badge variant={c.severity === "Critical" ? "destructive" : "warning"}>
+                        <Badge
+                          variant={
+                            c.severity === "Critical"
+                              ? "destructive"
+                              : c.severity === "Warning"
+                              ? "warning"
+                              : "standard"
+                          }
+                        >
                           {c.severity}
                         </Badge>
                       </button>

@@ -30,6 +30,7 @@ export function FleetView() {
     settings,
     selectTruck,
     setActivePage,
+    obdCatalog,
   } = useHaulTrack();
 
   const fleetCapacityKg = trucks.reduce((s, t) => s + t.maxCapacityKg, 0);
@@ -106,7 +107,7 @@ export function FleetView() {
           const pct = getTruckLoadPct(truck);
           const occupied = truck.slots.filter((s) => s.cargo).length;
           const isSelected = truck.id === activeTruck.id;
-          const obdHealth = getVehicleObdHealth(truck);
+          const obdHealth = getVehicleObdHealth(truck, obdCatalog);
 
           return (
             <Card

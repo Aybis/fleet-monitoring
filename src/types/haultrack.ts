@@ -6,7 +6,19 @@ export type NavPage =
   | "fleet"
   | "analytics"
   | "reports"
+  | "master-data"
+  | "hld"
   | "settings";
+
+export interface HubMasterItem {
+  code: string;
+  city: string;
+  region: string;
+  lat: number;
+  lng: number;
+  docks: number;
+  status: "Active" | "Maintenance";
+}
 
 export type PriorityLevel = "Standard" | "Express" | "Same-day";
 

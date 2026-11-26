@@ -30,7 +30,6 @@ import {
   getVehicleObdHealth,
   useHaulTrack,
 } from "@/context/HaulTrackContext";
-import { getDtcInfo } from "@/data/obdDatabase";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -55,6 +54,8 @@ export function DriverCommsDrawer({
     sendDriverMessage,
     setActivePage,
     pushToast,
+    obdCatalog,
+    lookupDtc,
   } = useHaulTrack();
 
   const [tab, setTab] = useState<CommsDrawerTab>(initialTab);
@@ -110,7 +111,7 @@ export function DriverCommsDrawer({
 
   const loadKg = getTruckLoadKg(activeTruck);
   const loadPct = getTruckLoadPct(activeTruck);
-  const obdHealth = getVehicleObdHealth(activeTruck);
+  const obdHealth = getVehicleObdHealth(activeTruck, obdCatalog);
 
   const formatTimer = (sec: number) => {
     const m = String(Math.floor(sec / 60)).padStart(2, "0");
@@ -599,7 +600,7 @@ export function DriverCommsDrawer({
                       {activeTruck.obd.activeCodes.map((c) => (
                         <p key={c.code} className="text-[11px] text-muted-foreground">
                           <strong className="font-mono text-red-600">{c.code}</strong>:{" "}
-                          {getDtcInfo(c.code).title}
+                          {lookupDtc(c.code).title}
                         </p>
                       ))}
                     </div>

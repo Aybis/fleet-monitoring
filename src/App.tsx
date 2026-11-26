@@ -8,6 +8,8 @@ import { ShipmentsView } from "@/components/views/ShipmentsView";
 import { FleetView } from "@/components/views/FleetView";
 import { AnalyticsView } from "@/components/views/AnalyticsView";
 import { ReportsView } from "@/components/views/ReportsView";
+import { MasterDataView } from "@/components/views/MasterDataView";
+import { HldArchitectureView } from "@/components/views/HldArchitectureView";
 import { SettingsView } from "@/components/views/SettingsView";
 import { DispatchModal } from "@/components/modals/DispatchModal";
 import { LiveTrackingModal } from "@/components/modals/LiveTrackingModal";
@@ -32,6 +34,8 @@ function HaulTrackShell() {
               {activePage === "fleet" && <FleetView />}
               {activePage === "analytics" && <AnalyticsView />}
               {activePage === "reports" && <ReportsView />}
+              {activePage === "master-data" && <MasterDataView />}
+              {activePage === "hld" && <HldArchitectureView />}
               {activePage === "settings" && <SettingsView />}
             </div>
           </main>

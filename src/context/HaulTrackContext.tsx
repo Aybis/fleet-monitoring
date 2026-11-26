@@ -8,7 +8,7 @@ import {
   INITIAL_TRUCKS,
 } from "@/data/initialData";
 import { projectIndonesia } from "@/data/indonesiaMap";
-import { getDtcInfo } from "@/data/obdDatabase";
+import { getDtcInfo, OBD_CODE_LIST } from "@/data/obdDatabase";
 import { formatCurrentTime } from "@/lib/utils";
 import type {
   ActivityItem,
@@ -16,8 +16,10 @@ import type {
   CargoSlot,
   CargoSlotItem,
   Driver,
+  HubMasterItem,
   NavPage,
   NotificationItem,
+  ObdDtcDefinition,
   QueuedShipment,
   RouteInfo,
   SlotCondition,
@@ -29,6 +31,21 @@ import type {
 
 const STORAGE_KEY = "isuzu_indonesia_leaflet_v5";
 
+const INITIAL_HUBS: HubMasterItem[] = [
+  { code: "JKT", city: "Jakarta", region: "DKI Jakarta & Karawang", lat: -6.2088, lng: 106.8456, docks: 6, status: "Active" },
+  { code: "BDG", city: "Bandung", region: "Jawa Barat", lat: -6.9175, lng: 107.6191, docks: 4, status: "Active" },
+  { code: "SMG", city: "Semarang", region: "Jawa Tengah", lat: -6.9667, lng: 110.4167, docks: 4, status: "Active" },
+  { code: "SBY", city: "Surabaya", region: "Jawa Timur", lat: -7.2575, lng: 112.7521, docks: 6, status: "Active" },
+  { code: "DPS", city: "Denpasar", region: "Bali", lat: -8.6705, lng: 115.2126, docks: 3, status: "Active" },
+  { code: "MDN", city: "Medan", region: "Sumatra Utara", lat: 3.5952, lng: 98.6722, docks: 4, status: "Active" },
+  { code: "PKU", city: "Pekanbaru", region: "Riau", lat: 0.5071, lng: 101.4478, docks: 3, status: "Active" },
+  { code: "PLB", city: "Palembang", region: "Sumatra Selatan", lat: -2.9761, lng: 104.7754, docks: 4, status: "Active" },
+  { code: "BPN", city: "Balikpapan", region: "Kalimantan Timur", lat: -1.2379, lng: 116.8529, docks: 4, status: "Active" },
+  { code: "SMD", city: "Samarinda", region: "Kalimantan Timur", lat: -0.5022, lng: 117.1536, docks: 3, status: "Active" },
+  { code: "MKS", city: "Makassar", region: "Sulawesi Selatan", lat: -5.1477, lng: 119.4327, docks: 5, status: "Active" },
+  { code: "DJJ", city: "Jayapura", region: "Papua", lat: -2.5916, lng: 140.669, docks: 2, status: "Active" },
+];
+
 interface PersistedState {
   trucks: Truck[];
   drivers: Driver[];
@@ -38,13 +55,15 @@ interface PersistedState {
   settings: AppSettings;
   activeTruckId: string;
   selectedSlotId: string;
+  obdCatalog: ObdDtcDefinition[];
+  hubCatalog: HubMasterItem[];
 }
 
 function loadInitialState(): PersistedState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw) as PersistedState;
+      const parsed = JSON.parse(raw) as Partial<PersistedState>;
       if (
         parsed &&
         Array.isArray(parsed.trucks) &&
@@ -53,7 +72,24 @@ function loadInitialState(): PersistedState {
         parsed.trucks[0].plateExpiry &&
         parsed.trucks[0].plateType
       ) {
-        return parsed;
+        return {
+          trucks: parsed.trucks,
+          drivers: parsed.drivers ?? INITIAL_DRIVERS,
+          queuedShipments: parsed.queuedShipments ?? INITIAL_QUEUED_SHIPMENTS,
+          activities: parsed.activities ?? INITIAL_ACTIVITIES,
+          notifications: parsed.notifications ?? INITIAL_NOTIFICATIONS,
+          settings: parsed.settings ?? INITIAL_SETTINGS,
+          activeTruckId: parsed.activeTruckId ?? "ISZ-204",
+          selectedSlotId: parsed.selectedSlotId ?? "A5",
+          obdCatalog:
+            Array.isArray(parsed.obdCatalog) && parsed.obdCatalog.length > 0
+              ? parsed.obdCatalog
+              : OBD_CODE_LIST,
+          hubCatalog:
+            Array.isArray(parsed.hubCatalog) && parsed.hubCatalog.length > 0
+              ? parsed.hubCatalog
+              : INITIAL_HUBS,
+        };
       }
     }
   } catch {
@@ -68,6 +104,8 @@ function loadInitialState(): PersistedState {
     settings: INITIAL_SETTINGS,
     activeTruckId: "ISZ-204",
     selectedSlotId: "A5",
+    obdCatalog: OBD_CODE_LIST,
+    hubCatalog: INITIAL_HUBS,
   };
 }
 
@@ -80,11 +118,16 @@ export function getTruckLoadPct(truck: Truck): number {
   return Math.round((getTruckLoadKg(truck) / truck.maxCapacityKg) * 100);
 }
 
-export function getVehicleObdHealth(truck: Truck): "Healthy" | "Warning" | "Critical" {
+export function getVehicleObdHealth(
+  truck: Truck,
+  catalog?: ObdDtcDefinition[]
+): "Healthy" | "Warning" | "Critical" {
   if (truck.obd.activeCodes.length === 0) return "Healthy";
-  const hasCritical = truck.obd.activeCodes.some(
-    (c) => getDtcInfo(c.code).severity === "Critical"
-  );
+  const resolveSeverity = (code: string) => {
+    const found = catalog?.find((c) => c.code.toUpperCase() === code.toUpperCase());
+    return found ? found.severity : getDtcInfo(code).severity;
+  };
+  const hasCritical = truck.obd.activeCodes.some((c) => resolveSeverity(c.code) === "Critical");
   return hasCritical ? "Critical" : "Warning";
 }
 
@@ -128,6 +171,14 @@ interface HaulTrackContextValue {
   liveTickCount: number;
   lastHeartbeat: string;
   telemetryHistory: Record<string, TelemetrySample[]>;
+  obdCatalog: ObdDtcDefinition[];
+  hubCatalog: HubMasterItem[];
+  lookupDtc: (code: string) => ObdDtcDefinition;
+  addObdCode: (def: ObdDtcDefinition) => boolean;
+  updateObdCode: (code: string, patch: Partial<ObdDtcDefinition>) => void;
+  deleteObdCode: (code: string) => void;
+  addHubCode: (hub: HubMasterItem) => boolean;
+  deleteHubCode: (code: string) => void;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
   updateSettings: (patch: Partial<AppSettings>) => void;
@@ -1098,6 +1149,120 @@ export function HaulTrackProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const lookupDtc = useCallback(
+    (code: string): ObdDtcDefinition => {
+      const upper = code.trim().toUpperCase();
+      return (
+        state.obdCatalog.find((c) => c.code.toUpperCase() === upper) ?? getDtcInfo(upper)
+      );
+    },
+    [state.obdCatalog]
+  );
+
+  const addObdCode = useCallback(
+    (def: ObdDtcDefinition): boolean => {
+      const cleanCode = def.code.trim().toUpperCase();
+      if (!cleanCode) return false;
+      if (state.obdCatalog.some((c) => c.code.toUpperCase() === cleanCode)) {
+        pushToast({
+          title: `Code ${cleanCode} already exists`,
+          description: "Edit the existing master record or use a unique DTC code.",
+          variant: "warning",
+        });
+        return false;
+      }
+      const normalized: ObdDtcDefinition = { ...def, code: cleanCode };
+      setState((prev) => ({
+        ...prev,
+        obdCatalog: [normalized, ...prev.obdCatalog],
+      }));
+      pushToast({
+        title: `Added Master Code ${cleanCode}`,
+        description: `Severity set to ${normalized.severity} (${normalized.subsystem}).`,
+        variant: "success",
+      });
+      return true;
+    },
+    [state.obdCatalog, pushToast]
+  );
+
+  const updateObdCode = useCallback(
+    (code: string, patch: Partial<ObdDtcDefinition>) => {
+      const targetUpper = code.toUpperCase();
+      setState((prev) => ({
+        ...prev,
+        obdCatalog: prev.obdCatalog.map((c) =>
+          c.code.toUpperCase() === targetUpper ? { ...c, ...patch, code: c.code } : c
+        ),
+      }));
+      pushToast({
+        title: `Updated ${targetUpper}`,
+        description: patch.severity
+          ? `Severity changed to ${patch.severity} across all fleet views.`
+          : "Master OBD-II code definition saved.",
+        variant: "success",
+      });
+    },
+    [pushToast]
+  );
+
+  const deleteObdCode = useCallback(
+    (code: string) => {
+      const targetUpper = code.toUpperCase();
+      setState((prev) => ({
+        ...prev,
+        obdCatalog: prev.obdCatalog.filter((c) => c.code.toUpperCase() !== targetUpper),
+      }));
+      pushToast({
+        title: `Deleted code ${targetUpper}`,
+        description: "Removed from Master OBD-II dictionary.",
+        variant: "default",
+      });
+    },
+    [pushToast]
+  );
+
+  const addHubCode = useCallback(
+    (hub: HubMasterItem): boolean => {
+      const cleanCode = hub.code.trim().toUpperCase();
+      if (!cleanCode) return false;
+      if (state.hubCatalog.some((h) => h.code.toUpperCase() === cleanCode)) {
+        pushToast({
+          title: `Hub code ${cleanCode} already exists`,
+          description: "Use a unique 3-letter Indonesian hub code.",
+          variant: "warning",
+        });
+        return false;
+      }
+      setState((prev) => ({
+        ...prev,
+        hubCatalog: [{ ...hub, code: cleanCode }, ...prev.hubCatalog],
+      }));
+      pushToast({
+        title: `Registered Hub ${cleanCode} (${hub.city})`,
+        description: `${hub.region} · ${hub.docks} docks configured.`,
+        variant: "success",
+      });
+      return true;
+    },
+    [state.hubCatalog, pushToast]
+  );
+
+  const deleteHubCode = useCallback(
+    (code: string) => {
+      setState((prev) => ({
+        ...prev,
+        hubCatalog: prev.hubCatalog.filter((h) => h.code !== code),
+      }));
+      pushToast({
+        title: `Removed hub ${code}`,
+        description: "Hub master record deleted.",
+        variant: "default",
+      });
+    },
+    [pushToast]
+  );
+
   const resetDemoData = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
     setState({
@@ -1109,10 +1274,12 @@ export function HaulTrackProvider({ children }: { children: React.ReactNode }) {
       settings: INITIAL_SETTINGS,
       activeTruckId: "ISZ-204",
       selectedSlotId: "A5",
+      obdCatalog: OBD_CODE_LIST,
+      hubCatalog: INITIAL_HUBS,
     });
     pushToast({
       title: "HORUS Fleet Intelligence reset",
-      description: "All 7 Isuzu vehicles, cargo bays, GPS pins, and OBD-II codes restored.",
+      description: "All 7 Isuzu vehicles, master codes, GPS pins, and OBD-II statuses restored.",
       variant: "success",
     });
   }, [pushToast]);
@@ -1179,6 +1346,14 @@ export function HaulTrackProvider({ children }: { children: React.ReactNode }) {
     liveTickCount,
     lastHeartbeat,
     telemetryHistory,
+    obdCatalog: state.obdCatalog,
+    hubCatalog: state.hubCatalog,
+    lookupDtc,
+    addObdCode,
+    updateObdCode,
+    deleteObdCode,
+    addHubCode,
+    deleteHubCode,
     markNotificationRead,
     markAllNotificationsRead,
     updateSettings,

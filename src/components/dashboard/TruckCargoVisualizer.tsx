@@ -14,7 +14,6 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { getVehicleObdHealth, useHaulTrack } from "@/context/HaulTrackContext";
-import { getDtcInfo } from "@/data/obdDatabase";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LicensePlateBadge } from "@/components/ui/LicensePlateBadge";
@@ -41,6 +40,8 @@ export function TruckCargoVisualizer() {
     moveSlotCargo,
     updateSlotCondition,
     setActivePage,
+    obdCatalog,
+    lookupDtc,
   } = useHaulTrack();
 
   const [inspectSlotId, setInspectSlotId] = useState<string | null>(null);
@@ -62,9 +63,9 @@ export function TruckCargoVisualizer() {
     (s) => s.cargo?.condition === "inspection"
   ).length;
 
-  const obdHealth = getVehicleObdHealth(activeTruck);
+  const obdHealth = getVehicleObdHealth(activeTruck, obdCatalog);
   const leadCode = activeTruck.obd.activeCodes[0]?.code;
-  const leadCodeInfo = leadCode ? getDtcInfo(leadCode) : null;
+  const leadCodeInfo = leadCode ? lookupDtc(leadCode) : null;
 
   const handleSlotClick = (slot: CargoSlot) => {
     if (slot.cargo) {

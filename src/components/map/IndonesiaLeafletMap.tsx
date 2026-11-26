@@ -4,7 +4,7 @@ import "leaflet/dist/leaflet.css";
 import { CITY_HUBS } from "@/data/initialData";
 import { INDONESIA_CORRIDORS } from "@/data/indonesiaMap";
 import { getVehicleObdHealth } from "@/context/HaulTrackContext";
-import type { Truck } from "@/types/haultrack";
+import type { ObdDtcDefinition, Truck } from "@/types/haultrack";
 
 export type MapCameraCommand =
   | { id: number; type: "indonesia" }
@@ -36,8 +36,13 @@ const TILE_URLS: Record<TileStyle, { url: string; attribution: string; maxZoom: 
   },
 };
 
-function createTruckMarkerIcon(truck: Truck, isSelected: boolean, showObdBadges: boolean): L.DivIcon {
-  const obdHealth = getVehicleObdHealth(truck);
+function createTruckMarkerIcon(
+  truck: Truck,
+  isSelected: boolean,
+  showObdBadges: boolean,
+  obdCatalog: ObdDtcDefinition[]
+): L.DivIcon {
+  const obdHealth = getVehicleObdHealth(truck, obdCatalog);
   const hasAlert = showObdBadges && obdHealth !== "Healthy";
   const plateClass = truck.plateType === "commercial" ? "plate-yellow" : "plate-white";
 
@@ -73,6 +78,7 @@ function createTruckMarkerIcon(truck: Truck, isSelected: boolean, showObdBadges:
 export function IndonesiaLeafletMap({
   trucks,
   activeTruck,
+  obdCatalog,
   showRoutes,
   showObdBadges,
   showGeofences,
@@ -82,6 +88,7 @@ export function IndonesiaLeafletMap({
 }: {
   trucks: Truck[];
   activeTruck: Truck;
+  obdCatalog: ObdDtcDefinition[];
   showRoutes: boolean;
   showObdBadges: boolean;
   showGeofences: boolean;
@@ -246,10 +253,10 @@ export function IndonesiaLeafletMap({
 
     for (const truck of trucks) {
       const isSelected = truck.id === activeTruck.id;
-      const obdHealth = getVehicleObdHealth(truck);
+      const obdHealth = getVehicleObdHealth(truck, obdCatalog);
 
       const marker = L.marker([truck.gps.lat, truck.gps.lng], {
-        icon: createTruckMarkerIcon(truck, isSelected, showObdBadges),
+        icon: createTruckMarkerIcon(truck, isSelected, showObdBadges, obdCatalog),
         zIndexOffset: isSelected ? 1000 : 100,
       });
 
@@ -290,7 +297,7 @@ export function IndonesiaLeafletMap({
 
       marker.addTo(group);
     }
-  }, [trucks, activeTruck.id, showObdBadges]);
+  }, [trucks, activeTruck.id, showObdBadges, obdCatalog]);
 
   // Execute Smooth Regional Camera Commands
   useEffect(() => {
